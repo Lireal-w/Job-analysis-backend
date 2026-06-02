@@ -311,6 +311,17 @@ class Settings(BaseSettings):
     EMAIL_CAPTCHA_REDIS_PREFIX: str
     EMAIL_CAPTCHA_EXPIRE_SECONDS: int
 
+    ##################################################
+    # MongoDB
+    ##################################################
+    # .env
+    MONGODB_URI: str
+    MONGODB_DATABASE: str
+
+    # 基础配置
+    MONGODB_JOB_COLLECTION: str = 'jobs'
+    MONGODB_COMPANY_COLLECTION: str = 'companies'
+
     @model_validator(mode='before')
     @classmethod
     def check_env(cls, values: Any) -> Any:

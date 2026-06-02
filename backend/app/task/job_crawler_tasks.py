@@ -18,7 +18,7 @@ def run_job_crawler():
     else:
         return {"status": "failed", "error": result.stderr}
 
-@celery_app.task("process_crawled_data")
+@celery_app.task(name="process_crawled_data")
 def process_crawled_data():
     """处理爬取后的数据，读取JSON/CSV并存入Job表"""
     # 1. 读取爬虫输出的JSON文件
