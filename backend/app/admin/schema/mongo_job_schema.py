@@ -84,3 +84,75 @@ class MongoCompanyPageData(BaseModel):
     total: int = Field(0, description='总条数')
     page: int = Field(1, description='当前页码')
     size: int = Field(20, description='每页数量')
+
+
+# ==================== Dashboard Schemas ====================
+
+
+class OverviewStats(BaseModel):
+    """概览统计"""
+
+    totalJobs: int = Field(0, description='总岗位数')
+    todayNew: int = Field(0, description='今日新增')
+    avgSalary: float = Field(0, description='平均薪资（元/月）')
+    totalCompanies: int = Field(0, description='公司总数')
+
+
+class TrendItem(BaseModel):
+    """岗位数量趋势项"""
+
+    month: str = Field(description='月份，如 2025-01')
+    count: int = Field(0, description='岗位数量')
+    avgSalary: float = Field(0, description='平均薪资（元/月）')
+
+
+class IndustryItem(BaseModel):
+    """行业岗位分布项"""
+
+    industry: str = Field(description='行业名称')
+    value: int = Field(0, description='岗位数量')
+    percent: float = Field(0, description='占比（%）')
+
+
+class EducationItem(BaseModel):
+    """学历要求分布项"""
+
+    education: str = Field(description='学历要求')
+    value: int = Field(0, description='岗位数量')
+
+
+class HotJobItem(BaseModel):
+    """热门岗位 TOP10 项"""
+
+    name: str = Field(description='职位名称')
+    count: int = Field(0, description='岗位数量')
+    salary: str = Field('', description='薪资区间')
+
+
+class CityItem(BaseModel):
+    """城市岗位分布项"""
+
+    city: str = Field(description='城市名称')
+    count: int = Field(0, description='岗位数量')
+    avgSalary: float = Field(0, description='平均薪资（元/月）')
+
+
+class ExperienceItem(BaseModel):
+    """工作经验要求项"""
+
+    experience: str = Field(description='经验要求')
+    value: int = Field(0, description='岗位数量')
+
+
+class SalaryRangeItem(BaseModel):
+    """薪资区间分布项"""
+
+    range: str = Field(description='薪资区间')
+    value: int = Field(0, description='岗位数量')
+
+
+class JobTypeItem(BaseModel):
+    """岗位类型分布项"""
+
+    type: str = Field(description='岗位类型')
+    value: int = Field(0, description='岗位数量')
