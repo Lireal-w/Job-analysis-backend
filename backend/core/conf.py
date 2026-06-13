@@ -320,7 +320,7 @@ class Settings(BaseSettings):
 
     # 基础配置
     MONGODB_JOB_COLLECTION: str = 'jobs'
-    MONGODB_COMPANY_COLLECTION: str = 'companies'
+    MONGODB_COMPANY_COLLECTION: str = 'jobs'
 
     @model_validator(mode='before')
     @classmethod
