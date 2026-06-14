@@ -19,7 +19,7 @@ class TaskLog(Base):
     task_id: Mapped[int] = mapped_column(sa.BigInteger, index=True, comment='任务ID')
     goal_id: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, comment='目标ID')
     action: Mapped[TaskLogAction] = mapped_column(
-        sa.SmallInteger, comment='动作(0创建 1更新 2进度更新 3完成 4取消 5重启)'
+        sa.SmallInteger, comment='动作(0创建 1更新 2进度更新 3完成 4取消 5重启)',default=TaskLogAction.CREATED
     )
     description: Mapped[str | None] = mapped_column(UniversalText, default=None, comment='描述')
-    operator: Mapped[int] = mapped_column(sa.BigInteger, comment='操作人ID')
+    operator: Mapped[int] = mapped_column(sa.BigInteger, comment='操作人ID',default=0)

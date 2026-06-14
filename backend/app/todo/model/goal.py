@@ -29,7 +29,7 @@ class TaskGoal(Base):
     ai_generated: Mapped[bool] = mapped_column(default=False, comment='是否AI生成')
 
     # 创建人/更新人
-    created_by: Mapped[int] = mapped_column(sa.BigInteger, sort_order=998, comment='创建者')
+    created_by: Mapped[int] = mapped_column(sa.BigInteger,default=0, sort_order=998, comment='创建者')
     updated_by: Mapped[int | None] = mapped_column(
         sa.BigInteger, init=False, default=None, sort_order=998, comment='修改者'
     )
