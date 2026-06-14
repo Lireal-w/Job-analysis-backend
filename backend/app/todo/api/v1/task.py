@@ -16,7 +16,7 @@ from backend.app.todo.service.task_service import task_service
 from backend.common.pagination import DependsPagination, PageData
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
-from backend.database.db import CurrentSession
+from backend.database.db import CurrentSession, CurrentSessionTransaction
 
 router = APIRouter()
 
@@ -83,7 +83,7 @@ async def get_tasks_paginated(
 
 @router.post('', summary='创建任务', dependencies=[DependsJwtAuth])
 async def create_task(
-    db: CurrentSession,
+    db: CurrentSessionTransaction,
     request: Request,
     obj: CreateTaskParam,
 ) -> ResponseSchemaModel[GetTaskDetail]:
@@ -94,7 +94,7 @@ async def create_task(
 
 @router.put('/{pk}', summary='更新任务', dependencies=[DependsJwtAuth])
 async def update_task(
-    db: CurrentSession,
+    db: CurrentSessionTransaction,
     request: Request,
     pk: Annotated[int, Path(description='任务ID')],
     obj: UpdateTaskParam,
@@ -106,7 +106,7 @@ async def update_task(
 
 @router.put('/{pk}/status', summary='更新任务状态', dependencies=[DependsJwtAuth])
 async def update_task_status(
-    db: CurrentSession,
+    db: CurrentSessionTransaction,
     request: Request,
     pk: Annotated[int, Path(description='任务ID')],
     status: Annotated[int, Query(description='状态(0待办 1进行中 2已完成 3已取消)')],
@@ -118,7 +118,7 @@ async def update_task_status(
 
 @router.put('/{pk}/progress', summary='更新任务进度', dependencies=[DependsJwtAuth])
 async def update_task_progress(
-    db: CurrentSession,
+    db: CurrentSessionTransaction,
     request: Request,
     pk: Annotated[int, Path(description='任务ID')],
     obj: UpdateTaskProgressParam,
@@ -130,7 +130,7 @@ async def update_task_progress(
 
 @router.delete('/{pk}', summary='删除任务', dependencies=[DependsJwtAuth])
 async def delete_task(
-    db: CurrentSession,
+    db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='任务ID')],
 ) -> ResponseModel:
     await task_service.delete(db=db, pk=pk)

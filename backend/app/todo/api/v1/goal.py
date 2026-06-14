@@ -7,7 +7,7 @@ from backend.app.todo.service.ai_service import ai_task_service
 from backend.app.todo.service.goal_service import goal_service
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
-from backend.database.db import CurrentSession
+from backend.database.db import CurrentSession, CurrentSessionTransaction
 
 router = APIRouter()
 
@@ -32,7 +32,7 @@ async def get_goal(
 
 @router.post('', summary='创建目标', dependencies=[DependsJwtAuth])
 async def create_goal(
-    db: CurrentSession,
+    db: CurrentSessionTransaction,
     request: Request,
     obj: CreateGoalParam,
 ) -> ResponseSchemaModel[GetGoalDetail]:
@@ -43,7 +43,7 @@ async def create_goal(
 
 @router.put('/{pk}', summary='更新目标', dependencies=[DependsJwtAuth])
 async def update_goal(
-    db: CurrentSession,
+    db: CurrentSessionTransaction,
     request: Request,
     pk: Annotated[int, Path(description='目标ID')],
     obj: UpdateGoalParam,
@@ -55,7 +55,7 @@ async def update_goal(
 
 @router.put('/{pk}/status', summary='更新目标状态', dependencies=[DependsJwtAuth])
 async def update_goal_status(
-    db: CurrentSession,
+    db: CurrentSessionTransaction,
     request: Request,
     pk: Annotated[int, Path(description='目标ID')],
     obj: UpdateGoalStatusParam,
@@ -67,7 +67,7 @@ async def update_goal_status(
 
 @router.post('/ai-generate/{task_id}', summary='AI自动生成阶段性目标', dependencies=[DependsJwtAuth])
 async def ai_generate_goals(
-    db: CurrentSession,
+    db: CurrentSessionTransaction,
     request: Request,
     task_id: Annotated[int, Path(description='任务ID')],
 ) -> ResponseSchemaModel[list[GetGoalDetail]]:
@@ -78,7 +78,7 @@ async def ai_generate_goals(
 
 @router.delete('/{pk}', summary='删除目标', dependencies=[DependsJwtAuth])
 async def delete_goal(
-    db: CurrentSession,
+    db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='目标ID')],
 ) -> ResponseModel:
     await goal_service.delete(db=db, pk=pk)
