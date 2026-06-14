@@ -106,7 +106,7 @@ class CRUDTask(CRUDPlus[Task]):
         if title is not None:
             filters['title__like'] = f'%{title}%'
 
-        return await self.select_order('sort_order', 'asc', 'id', 'desc', **filters)
+        return await self.select_order(['sort_order', 'id'], ['asc', 'desc'], **filters)
 
     async def create(self, db: AsyncSession, obj: CreateTaskParam, created_by: int) -> Task:
         """
