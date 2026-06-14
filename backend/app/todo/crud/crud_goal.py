@@ -39,9 +39,7 @@ class CRUDTaskGoal(CRUDPlus[TaskGoal]):
         :param created_by: 创建者ID
         :return:
         """
-        data = obj.model_dump()
-        data['created_by'] = created_by
-        return await self.create_model(db, data, flush=True)
+        return await self.create_model(db, obj, flush=True, created_by=created_by)
 
     async def create_batch(
         self, db: AsyncSession, goals: list[dict], created_by: int
@@ -56,8 +54,8 @@ class CRUDTaskGoal(CRUDPlus[TaskGoal]):
         """
         created_goals = []
         for goal_data in goals:
-            goal_data['created_by'] = created_by
-            goal = await self.create_model(db, goal_data, flush=True)
+            param = CreateGoalParam(**goal_data)
+            goal = await self.create_model(db, param, flush=True, created_by=created_by)
             created_goals.append(goal)
         return created_goals
 

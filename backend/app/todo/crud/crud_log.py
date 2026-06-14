@@ -40,15 +40,15 @@ class CRUDTaskLog(CRUDPlus[TaskLog]):
         :param goal_id: 目标ID
         :return:
         """
-        data = {
-            'task_id': task_id,
-            'action': action.value,
-            'operator': operator,
-            'description': description,
-        }
-        if goal_id is not None:
-            data['goal_id'] = goal_id
-        return await self.create_model(db, data, flush=True)
+        from backend.app.todo.schema.log import CreateTaskLogParam
+
+        obj = CreateTaskLogParam(
+            task_id=task_id,
+            action=action.value,
+            operator=operator,
+            description=description,
+        )
+        return await self.create_model(db, obj, flush=True, goal_id=goal_id)
 
     async def delete_by_task(self, db: AsyncSession, task_id: int) -> int:
         """

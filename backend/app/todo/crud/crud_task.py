@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -117,13 +118,13 @@ class CRUDTask(CRUDPlus[Task]):
         :param created_by: 创建者ID
         :return:
         """
-        data = obj.model_dump()
-        data['created_by'] = created_by
-        if data.get('assigned_to') is None:
-            data['assigned_to'] = created_by
-        return await self.create_model(db, data, flush=True)
+        extra = {
+            'created_by': created_by,
+            'assigned_to': obj.assigned_to if obj.assigned_to is not None else created_by,
+        }
+        return await self.create_model(db, obj, flush=True, **extra)
 
-    async def update(self, db: AsyncSession, task_id: int, obj: UpdateTaskParam) -> int:
+    async def update(self, db: AsyncSession, task_id: int, obj: UpdateTaskParam | dict[str, Any]) -> int:
         """
         更新任务
 
