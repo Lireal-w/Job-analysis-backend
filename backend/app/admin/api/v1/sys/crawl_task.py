@@ -37,7 +37,7 @@ async def get_all_tasks(db: CurrentSession) -> ResponseSchemaModel[list[GetCrawl
 
 
 @router.get('/{pk}', summary='获取采集任务详情', dependencies=[DependsJwtAuth])
-async def get_task(
+async def get_crawl_task(
     db: CurrentSession,
     pk: Annotated[int, Path(description='任务 ID')],
 ) -> ResponseSchemaModel[GetCrawlTaskDetail]:
@@ -50,7 +50,7 @@ async def get_task(
     summary='分页获取采集任务列表',
     dependencies=[DependsJwtAuth, DependsPagination],
 )
-async def get_tasks_paginated(
+async def get_crawl_tasks_paginated(
     db: CurrentSession,
     name: Annotated[str | None, Query(description='任务名称')] = None,
     status: Annotated[str | None, Query(description='状态(stopped/running/paused/error)')] = None,
@@ -70,7 +70,7 @@ async def get_tasks_paginated(
 
 
 @router.post('', summary='创建采集任务', dependencies=[DependsJwtAuth])
-async def create_task(
+async def create_crawl_task(
     db: CurrentSessionTransaction,
     request: Request,
     obj: CreateCrawlTaskParam,
@@ -81,7 +81,7 @@ async def create_task(
 
 
 @router.put('/{pk}', summary='更新采集任务', dependencies=[DependsJwtAuth])
-async def update_task(
+async def update_crawl_task(
     db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='任务 ID')],
     obj: UpdateCrawlTaskParam,
@@ -91,7 +91,7 @@ async def update_task(
 
 
 @router.put('/{pk}/status', summary='更新采集任务状态', dependencies=[DependsJwtAuth])
-async def update_task_status(
+async def update_crawl_task_status(
     db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='任务 ID')],
     obj: UpdateCrawlTaskStatusParam,
@@ -114,7 +114,7 @@ async def delete_tasks(
 # ── 任务控制 ──────────────────────────────────────────
 
 @router.post('/{pk}/start', summary='启动采集任务', dependencies=[DependsJwtAuth])
-async def start_task(
+async def start_crawl_task(
     db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='任务 ID')],
 ) -> ResponseSchemaModel[dict]:
@@ -123,7 +123,7 @@ async def start_task(
 
 
 @router.post('/{pk}/stop', summary='停止采集任务', dependencies=[DependsJwtAuth])
-async def stop_task(
+async def stop_crawl_task(
     db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='任务 ID')],
 ) -> ResponseModel:
@@ -132,7 +132,7 @@ async def stop_task(
 
 
 @router.post('/{pk}/trigger', summary='手动触发采集任务', dependencies=[DependsJwtAuth])
-async def trigger_task(
+async def trigger_crawl_task(
     db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='任务 ID')],
 ) -> ResponseSchemaModel[dict]:
@@ -143,7 +143,7 @@ async def trigger_task(
 # ── 日志 ──────────────────────────────────────────────
 
 @router.get('/{pk}/logs', summary='获取采集任务日志列表', dependencies=[DependsJwtAuth])
-async def get_task_logs(
+async def get_crawl_task_logs(
     db: CurrentSession,
     pk: Annotated[int, Path(description='任务 ID')],
     limit: Annotated[int, Query(description='日志数量')] = 50,
@@ -153,7 +153,7 @@ async def get_task_logs(
 
 
 @router.get('/logs/{log_id}', summary='获取采集任务日志详情', dependencies=[DependsJwtAuth])
-async def get_task_log(
+async def get_crawl_task_log_detail(
     db: CurrentSession,
     log_id: Annotated[int, Path(description='日志 ID')],
 ) -> ResponseSchemaModel[GetCrawlTaskLogDetail]:
