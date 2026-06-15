@@ -1,3 +1,5 @@
+from backend.app.admin.model.crawl_task import CrawlTask as CrawlTask
+from backend.app.admin.model.crawl_task import CrawlTaskLog as CrawlTaskLog
 from backend.app.admin.model.data_rule import DataRule as DataRule
 from backend.app.admin.model.data_scope import DataScope as DataScope
 from backend.app.admin.model.datasource import Datasource as Datasource

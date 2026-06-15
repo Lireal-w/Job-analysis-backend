@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from backend.app.admin.api.v1.sys.crawl_task import router as crawl_task_router
 from backend.app.admin.api.v1.sys.data_rule import router as data_rule_router
 from backend.app.admin.api.v1.sys.data_scope import router as data_scope_router
 from backend.app.admin.api.v1.sys.datasource import router as datasource_router
@@ -14,6 +15,7 @@ from backend.app.admin.api.v1.sys.worker import router as worker_router
 
 router = APIRouter(prefix='/sys')
 
+router.include_router(crawl_task_router, prefix='/crawl-tasks', tags=['系统采集任务管理'])
 router.include_router(dept_router, prefix='/depts', tags=['系统部门'])
 router.include_router(menu_router, prefix='/menus', tags=['系统菜单'])
 router.include_router(role_router, prefix='/roles', tags=['系统角色'])

@@ -177,3 +177,37 @@ class DatasourceType(StrEnum):
     REDIS = 'redis'
     MSSQL = 'mssql'
     ORACLE = 'oracle'
+
+
+class CrawlMode(StrEnum):
+    """采集模式"""
+
+    FULL = 'full'
+    INCREMENTAL = 'incremental'
+
+
+class CrawlStatus(StrEnum):
+    """采集任务状态"""
+
+    STOPPED = 'stopped'
+    RUNNING = 'running'
+    PAUSED = 'paused'
+    ERROR = 'error'
+
+
+class CrawlScheduleType(StrEnum):
+    """调度类型"""
+
+    NONE = 'none'
+    CRON = 'cron'
+    INTERVAL = 'interval'
+
+
+class CrawlPriority(IntEnum):
+    """采集优先级"""
+
+    LOWEST = 0
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+    HIGHEST = 4
