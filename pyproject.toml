@@ -61,6 +61,7 @@ dependencies = [
   "sqlparse>=0.5.5",
   "starlette-context>=0.5.1",
   "user-agents>=2.2.0",
+  "paramiko>=3.5.0",
 ]
 dynamic = ["version"]
 
