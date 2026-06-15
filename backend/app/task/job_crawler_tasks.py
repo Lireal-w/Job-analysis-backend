@@ -1,28 +1,52 @@
-from backend.app.task.celery import celery_app
 import subprocess
-import os
 from pathlib import Path
 
+from backend.app.task.celery import celery_app
+from backend.collectors.scrapy_runner import get_crawler_stats, run_scrapy_crawler
+
+
 @celery_app.task(name="scrapy_crawler")
-def run_job_crawler():
-    """异步执行Scrapy爬虫，采集智联校园招聘数据"""
-    project_root = Path(__file__).parent.parent.parent.parent
-    crawler_path = project_root / "backend" / "collectors" / "job-analysis"
-    cmd = f"cd {crawler_path} && scrapy crawl xiaoyuan"
-    
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    
-    if result.returncode == 0:
-        # 后续：读取爬虫输出的JSON/CSV，解析并存入数据库
-        return {"status": "success", "output": result.stdout}
-    else:
-        return {"status": "failed", "error": result.stderr}
+def run_job_crawler(spider_name: str = "xiaoyuan", keyword: str = "") -> dict:
+    """
+    异步执行 Scrapy 爬虫，采集招聘数据
+
+    :param spider_name: 爬虫名称 (xiaoyuan / liepin)
+    :param keyword: 搜索关键词
+    :return: 执行结果
+    """
+    try:
+        output_file = run_scrapy_crawler(
+            spider_name=spider_name,
+            keyword=keyword,
+        )
+        return {
+            "status": "success",
+            "output_file": output_file,
+            "spider": spider_name,
+        }
+    except RuntimeError as e:
+        return {
+            "status": "failed",
+            "error": str(e),
+            "spider": spider_name,
+        }
+
+
+@celery_app.task(name="get_crawler_stats")
+def fetch_crawler_stats() -> dict:
+    """
+    获取爬虫运行统计
+
+    :return: 统计信息 dict
+    """
+    return get_crawler_stats()
+
 
 @celery_app.task(name="process_crawled_data")
-def process_crawled_data():
-    """处理爬取后的数据，读取JSON/CSV并存入Job表"""
-    # 1. 读取爬虫输出的JSON文件
-    # 2. 解析每个职位数据
-    # 3. 调用 job_crud.create_or_update_job()
-    # 4. 删除临时文件或归档
-    pass
+def process_crawled_data() -> dict:
+    """
+    处理爬取后的数据（预留）
+
+    读取 JSON/CSV 并存入数据库
+    """
+    return {"status": "pending", "message": "Not implemented"}

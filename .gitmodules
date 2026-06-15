@@ -1,3 +1,0 @@
-[submodule "backend/collectors/job-analysis"]
-	path = backend/collectors/job-analysis
-	url = https://gitee.com/Lireal-W/job-analysis.git
