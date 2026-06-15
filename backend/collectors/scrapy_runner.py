@@ -4,8 +4,8 @@ import uuid
 from datetime import date
 from pathlib import Path
 
-from core.conf import settings
-from common.log import log
+from backend.core.conf import settings
+from backend.common.log import log
 
 # 爬虫输出目录
 OUTPUT_DIR = Path(settings.BASE_DIR) / "static" / "crawl_output"
