@@ -12,3 +12,4 @@ from backend.app.admin.model.role import Role as Role
 from backend.app.admin.model.server import Server as Server
 from backend.app.admin.model.user import User as User
 from backend.app.admin.model.user_password_history import UserPasswordHistory as UserPasswordHistory
+from backend.app.admin.model.worker import WorkerNode as WorkerNode

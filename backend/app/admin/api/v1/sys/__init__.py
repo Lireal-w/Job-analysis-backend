@@ -9,6 +9,7 @@ from backend.app.admin.api.v1.sys.plugin import router as plugin_router
 from backend.app.admin.api.v1.sys.role import router as role_router
 from backend.app.admin.api.v1.sys.server import router as server_router
 from backend.app.admin.api.v1.sys.user import router as user_router
+from backend.app.admin.api.v1.sys.worker import router as worker_router
 
 router = APIRouter(prefix='/sys')
 
@@ -20,4 +21,5 @@ router.include_router(data_rule_router, prefix='/data-rules', tags=['系统数�
 router.include_router(data_scope_router, prefix='/data-scopes', tags=['系统数据范围'])
 router.include_router(file_router, prefix='/files', tags=['系统文件'])
 router.include_router(server_router, prefix='/servers', tags=['系统服务器管理'])
+router.include_router(worker_router, prefix='/workers', tags=['系统 Worker 管理'])
 router.include_router(plugin_router, prefix='/plugins', tags=['系统插件'])
