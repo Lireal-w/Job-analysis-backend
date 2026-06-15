@@ -13,8 +13,3 @@ venv/
 logs/
 .superpowers/
 superpowers/
-
-# 爬虫运行生成文件
-backend/collectors/stats/
-backend/static/crawl_output/
-backend/log/crawler_debug/

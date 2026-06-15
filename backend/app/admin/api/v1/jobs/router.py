@@ -4,8 +4,6 @@ from fastapi import APIRouter, Path, Query
 
 from backend.app.admin.schema.job_schema import CreateJobParam, GetJobDetail, GetJobListDetail, UpdateJobParam
 from backend.app.admin.service.job_service import job_service
-from backend.app.task.celery import celery_app
-from backend.app.task.job_crawler_tasks import run_job_crawler
 from backend.common.pagination import DependsPagination, PageData
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
@@ -87,23 +85,3 @@ async def delete_job(
     if count > 0:
         return response_base.success()
     return response_base.fail()
-
-
-@router.post('/crawler/run', summary='手动触发爬虫任务', dependencies=[DependsJwtAuth])
-async def trigger_crawler() -> ResponseSchemaModel[dict]:
-    """手动触发爬虫任务"""
-    task = run_job_crawler.delay()
-    return response_base.success(data={'task_id': task.id, 'status': 'started'})
-
-
-@router.get('/crawler/status/{task_id}', summary='查询爬虫任务状态', dependencies=[DependsJwtAuth])
-async def get_crawler_status(
-    task_id: Annotated[str, Path(description='任务 ID')],
-) -> ResponseSchemaModel[dict]:
-    """查询爬虫任务状态"""
-    task = celery_app.AsyncResult(task_id)
-    return response_base.success(data={
-        'task_id': task_id,
-        'status': task.status,
-        'result': task.result,
-    })
