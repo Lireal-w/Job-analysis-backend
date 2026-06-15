@@ -165,3 +165,15 @@ class ProtocolType(StrEnum):
     SFTP = 'sftp'
     HTTP = 'http'
     HTTPS = 'https'
+
+
+class DatasourceType(StrEnum):
+    """数据源数据库类型"""
+
+    MYSQL = 'mysql'
+    POSTGRESQL = 'postgresql'
+    SQLITE = 'sqlite'
+    MONGODB = 'mongodb'
+    REDIS = 'redis'
+    MSSQL = 'mssql'
+    ORACLE = 'oracle'

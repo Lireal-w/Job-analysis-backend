@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from backend.app.admin.api.v1.sys.data_rule import router as data_rule_router
 from backend.app.admin.api.v1.sys.data_scope import router as data_scope_router
+from backend.app.admin.api.v1.sys.datasource import router as datasource_router
 from backend.app.admin.api.v1.sys.dept import router as dept_router
 from backend.app.admin.api.v1.sys.file import router as file_router
 from backend.app.admin.api.v1.sys.menu import router as menu_router
@@ -20,6 +21,7 @@ router.include_router(user_router, prefix='/users', tags=['系统用户'])
 router.include_router(data_rule_router, prefix='/data-rules', tags=['系统数据规则'])
 router.include_router(data_scope_router, prefix='/data-scopes', tags=['系统数据范围'])
 router.include_router(file_router, prefix='/files', tags=['系统文件'])
+router.include_router(datasource_router, prefix='/datasources', tags=['系统数据源管理'])
 router.include_router(server_router, prefix='/servers', tags=['系统服务器管理'])
 router.include_router(worker_router, prefix='/workers', tags=['系统 Worker 管理'])
 router.include_router(plugin_router, prefix='/plugins', tags=['系统插件'])

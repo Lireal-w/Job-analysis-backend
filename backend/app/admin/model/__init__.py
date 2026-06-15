@@ -1,5 +1,6 @@
 from backend.app.admin.model.data_rule import DataRule as DataRule
 from backend.app.admin.model.data_scope import DataScope as DataScope
+from backend.app.admin.model.datasource import Datasource as Datasource
 from backend.app.admin.model.dept import Dept as Dept
 from backend.app.admin.model.login_log import LoginLog as LoginLog
 from backend.app.admin.model.m2m import data_scope_rule as data_scope_rule
