@@ -7,7 +7,7 @@ from backend.app.admin.api.v1.sys.file import router as file_router
 from backend.app.admin.api.v1.sys.menu import router as menu_router
 from backend.app.admin.api.v1.sys.plugin import router as plugin_router
 from backend.app.admin.api.v1.sys.role import router as role_router
-from backend.app.admin.api.v1.sys.ssh import router as ssh_router
+from backend.app.admin.api.v1.sys.server import router as server_router
 from backend.app.admin.api.v1.sys.user import router as user_router
 
 router = APIRouter(prefix='/sys')
@@ -19,5 +19,5 @@ router.include_router(user_router, prefix='/users', tags=['系统用户'])
 router.include_router(data_rule_router, prefix='/data-rules', tags=['系统数据规则'])
 router.include_router(data_scope_router, prefix='/data-scopes', tags=['系统数据范围'])
 router.include_router(file_router, prefix='/files', tags=['系统文件'])
-router.include_router(ssh_router, prefix='/ssh', tags=['系统 SSH 管理'])
+router.include_router(server_router, prefix='/servers', tags=['系统服务器管理'])
 router.include_router(plugin_router, prefix='/plugins', tags=['系统插件'])

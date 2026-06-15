@@ -153,3 +153,15 @@ class LifespanStage(IntEnum):
     core = 0
     plugin = 1
     tail = 2
+
+
+class ProtocolType(StrEnum):
+    """服务器协议类型"""
+
+    SSH = 'ssh'
+    RDP = 'rdp'
+    VNC = 'vnc'
+    TELNET = 'telnet'
+    SFTP = 'sftp'
+    HTTP = 'http'
+    HTTPS = 'https'
