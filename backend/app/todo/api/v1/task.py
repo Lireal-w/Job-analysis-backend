@@ -22,7 +22,7 @@ router = APIRouter()
 
 
 @router.get('/today', summary='获取今日待完成任务', dependencies=[DependsJwtAuth])
-async def get_today_tasks(
+async def todo_get_today_tasks(
     db: CurrentSession, request: Request
 ) -> ResponseSchemaModel[list[GetTaskDetail]]:
     user_id = request.user.id
@@ -31,7 +31,7 @@ async def get_today_tasks(
 
 
 @router.get('/{pk}', summary='获取任务详情', dependencies=[DependsJwtAuth])
-async def get_task(
+async def todo_get_task(
     db: CurrentSession,
     pk: Annotated[int, Path(description='任务ID')],
 ) -> ResponseSchemaModel[GetTaskDetail]:
@@ -40,7 +40,7 @@ async def get_task(
 
 
 @router.get('/{pk}/with-goals', summary='获取任务详情(含目标)', dependencies=[DependsJwtAuth])
-async def get_task_with_goals(
+async def todo_get_task_with_goals(
     db: CurrentSession,
     pk: Annotated[int, Path(description='任务ID')],
 ) -> ResponseSchemaModel[GetTaskDetailWithGoals]:
@@ -59,7 +59,7 @@ async def get_task_with_goals(
         DependsPagination,
     ],
 )
-async def get_tasks_paginated(
+async def todo_get_tasks_paginated(
     db: CurrentSession,
     request: Request,
     task_type: Annotated[int | None, Query(description='任务类型(0每日 1周期 2定时)')] = None,
@@ -82,7 +82,7 @@ async def get_tasks_paginated(
 
 
 @router.post('', summary='创建任务', dependencies=[DependsJwtAuth])
-async def create_task(
+async def todo_create_task(
     db: CurrentSessionTransaction,
     request: Request,
     obj: CreateTaskParam,
@@ -93,7 +93,7 @@ async def create_task(
 
 
 @router.put('/{pk}', summary='更新任务', dependencies=[DependsJwtAuth])
-async def update_task(
+async def todo_update_task(
     db: CurrentSessionTransaction,
     request: Request,
     pk: Annotated[int, Path(description='任务ID')],
@@ -105,7 +105,7 @@ async def update_task(
 
 
 @router.put('/{pk}/status', summary='更新任务状态', dependencies=[DependsJwtAuth])
-async def update_task_status(
+async def todo_update_task_status(
     db: CurrentSessionTransaction,
     request: Request,
     pk: Annotated[int, Path(description='任务ID')],
@@ -117,7 +117,7 @@ async def update_task_status(
 
 
 @router.put('/{pk}/progress', summary='更新任务进度', dependencies=[DependsJwtAuth])
-async def update_task_progress(
+async def todo_update_task_progress(
     db: CurrentSessionTransaction,
     request: Request,
     pk: Annotated[int, Path(description='任务ID')],
@@ -129,7 +129,7 @@ async def update_task_progress(
 
 
 @router.delete('/{pk}', summary='删除任务', dependencies=[DependsJwtAuth])
-async def delete_task(
+async def todo_delete_task(
     db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='任务ID')],
 ) -> ResponseModel:
