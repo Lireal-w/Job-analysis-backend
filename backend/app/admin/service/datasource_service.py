@@ -133,6 +133,13 @@ class DatasourceService:
             DatasourceType.FILE_JSON: _test_file_json,
             DatasourceType.KAFKA: _test_kafka,
             DatasourceType.S3: _test_s3,
+            DatasourceType.ELASTICSEARCH: _test_elasticsearch,
+            DatasourceType.CLICKHOUSE: _test_clickhouse,
+            DatasourceType.FTP: _test_ftp,
+            DatasourceType.SFTP: _test_sftp,
+            DatasourceType.HTTP_WEBHOOK: _test_http_webhook,
+            DatasourceType.RABBITMQ: _test_rabbitmq,
+            DatasourceType.HIVE: _test_hive,
         }
 
         tester = testers.get(obj.db_type)
@@ -484,6 +491,179 @@ def _test_s3(obj: DatasourceTestParam) -> dict[str, Any]:
         return {'success': False, 'message': f'S3 访问失败: {e.response["Error"]["Message"]}'}
     except Exception as e:
         return {'success': False, 'message': f'S3 连接失败: {str(e)}'}
+
+
+def _test_elasticsearch(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 Elasticsearch 连接"""
+    try:
+        import httpx
+
+        url = f'http://{obj.host}:{obj.port}'
+        if obj.username and obj.password:
+            from httpx import BasicAuth
+            auth = BasicAuth(obj.username, obj.password)
+            with httpx.Client(timeout=10, auth=auth) as client:
+                response = client.get(url)
+        else:
+            with httpx.Client(timeout=10) as client:
+                response = client.get(url)
+
+        if response.status_code == 200:
+            info = response.json()
+            version = info.get('version', {}).get('number', '')
+            return {'success': True, 'message': 'Elasticsearch 连接成功', 'data': {'version': version, 'cluster_name': info.get('cluster_name', '')}}
+        return {'success': False, 'message': f'Elasticsearch 返回状态码: {response.status_code}'}
+    except ImportError:
+        return {'success': False, 'message': '请安装 httpx 库: pip install httpx'}
+    except Exception as e:
+        return {'success': False, 'message': f'Elasticsearch 连接失败: {str(e)}'}
+
+
+def _test_clickhouse(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 ClickHouse 连接"""
+    try:
+        import httpx
+
+        url = f'http://{obj.host}:{obj.port}'
+        params = {}
+        if obj.database_name:
+            params['database'] = obj.database_name
+
+        with httpx.Client(timeout=10) as client:
+            if obj.username and obj.password:
+                response = client.get(url, params=params, headers={'X-ClickHouse-User': obj.username, 'X-ClickHouse-Key': obj.password})
+            else:
+                response = client.get(url, params=params)
+
+        if response.status_code == 200:
+            return {'success': True, 'message': f'ClickHouse 连接成功 (HTTP {response.status_code})', 'data': {'host': obj.host, 'port': obj.port}}
+        return {'success': False, 'message': f'ClickHouse 返回状态码: {response.status_code}'}
+    except ImportError:
+        return {'success': False, 'message': '请安装 httpx 库: pip install httpx'}
+    except Exception as e:
+        return {'success': False, 'message': f'ClickHouse 连接失败: {str(e)}'}
+
+
+def _test_ftp(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 FTP 连接"""
+    try:
+        from ftplib import FTP
+
+        ftp = FTP()
+        ftp.connect(obj.host, obj.port or 21, timeout=10)
+        ftp.login(obj.username or 'anonymous', obj.password or '')
+        welcome = ftp.welcome
+        dir_list = ftp.nlst()[:10] if ftp.nlst() else []
+        ftp.quit()
+        return {'success': True, 'message': 'FTP 连接成功', 'data': {'welcome': welcome, 'dir_list': dir_list}}
+    except ImportError:
+        return {'success': False, 'message': 'FTP 模块加载失败'}
+    except Exception as e:
+        return {'success': False, 'message': f'FTP 连接失败: {str(e)}'}
+
+
+def _test_sftp(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 SFTP 连接"""
+    try:
+        import paramiko
+
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(
+            hostname=obj.host,
+            port=obj.port or 22,
+            username=obj.username or 'root',
+            password=obj.password or '',
+            timeout=10,
+        )
+        sftp = ssh.open_sftp()
+        dir_list = sftp.listdir('.')[:10]
+        sftp.close()
+        ssh.close()
+        return {'success': True, 'message': 'SFTP 连接成功', 'data': {'dir_list': dir_list}}
+    except ImportError:
+        return {'success': False, 'message': '请安装 paramiko 库: pip install paramiko'}
+    except Exception as e:
+        return {'success': False, 'message': f'SFTP 连接失败: {str(e)}'}
+
+
+def _test_http_webhook(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 HTTP Webhook 连接"""
+    try:
+        import httpx
+
+        url = obj.host
+        if not url.startswith(('http://', 'https://')):
+            url = f'http://{url}'
+
+        payload = {'test': True, 'timestamp': timezone.now().isoformat()}
+        with httpx.Client(timeout=10) as client:
+            response = client.post(url, json=payload)
+
+        if response.status_code < 500:
+            return {'success': True, 'message': f'Webhook 可达 (HTTP {response.status_code})', 'data': {'status_code': response.status_code}}
+        return {'success': False, 'message': f'Webhook 返回错误状态码: {response.status_code}'}
+    except ImportError:
+        return {'success': False, 'message': '请安装 httpx 库: pip install httpx'}
+    except Exception as e:
+        return {'success': False, 'message': f'Webhook 连接失败: {str(e)}'}
+
+
+def _test_rabbitmq(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 RabbitMQ 连接"""
+    try:
+        import httpx
+
+        management_port = obj.port or 15672
+        url = f'http://{obj.host}:{management_port}/api/overview'
+        auth_username = obj.username or 'guest'
+        auth_password = obj.password or 'guest'
+
+        with httpx.Client(timeout=10, auth=(auth_username, auth_password)) as client:
+            response = client.get(url)
+
+        if response.status_code == 200:
+            data = response.json()
+            version = data.get('rabbitmq_version', '')
+            cluster = data.get('cluster_name', '')
+            return {'success': True, 'message': 'RabbitMQ 连接成功', 'data': {'version': version, 'cluster_name': cluster}}
+        return {'success': False, 'message': f'RabbitMQ 返回状态码: {response.status_code}'}
+    except ImportError:
+        # Fallback: try socket connection
+        import socket
+
+        host = obj.host or 'localhost'
+        port = obj.port or 5672
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(10)
+            result = sock.connect_ex((host, port))
+            sock.close()
+            if result == 0:
+                return {'success': True, 'message': f'RabbitMQ AMQP 端口可达 ({host}:{port})', 'data': {'host': host, 'port': port}}
+            return {'success': False, 'message': f'RabbitMQ AMQP 端口不可达 ({host}:{port})'}
+        except Exception as e:
+            return {'success': False, 'message': f'RabbitMQ 连接失败: {str(e)}'}
+    except Exception as e:
+        return {'success': False, 'message': f'RabbitMQ 连接失败: {str(e)}'}
+
+
+def _test_hive(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 Hive 连接"""
+    import socket
+
+    host = obj.host or 'localhost'
+    port = obj.port or 10000
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
+        result = sock.connect_ex((host, port))
+        sock.close()
+        if result == 0:
+            return {'success': True, 'message': f'Hive Server 可达 ({host}:{port})', 'data': {'host': host, 'port': port}}
+        return {'success': False, 'message': f'Hive Server 不可达 ({host}:{port})'}
+    except Exception as e:
+        return {'success': False, 'message': f'Hive 连接失败: {str(e)}'}
 
 
 datasource_service: DatasourceService = DatasourceService()

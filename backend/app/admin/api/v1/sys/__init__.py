@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from backend.app.admin.api.v1.sys.data_permission import router as data_permission_router
 from backend.app.admin.api.v1.sys.crawl_task import router as crawl_task_router
 from backend.app.admin.api.v1.sys.data_flow import router as data_flow_router
 from backend.app.admin.api.v1.sys.data_quality import router as data_quality_router
@@ -20,6 +21,7 @@ from backend.app.admin.api.v1.sys.worker import router as worker_router
 
 router = APIRouter(prefix='/sys')
 
+router.include_router(data_permission_router, prefix='/permissions', tags=['系统数据权限'])
 router.include_router(crawl_task_router, prefix='/crawl-tasks', tags=['系统采集任务管理'])
 router.include_router(dept_router, prefix='/depts', tags=['系统部门'])
 router.include_router(menu_router, prefix='/menus', tags=['系统菜单'])

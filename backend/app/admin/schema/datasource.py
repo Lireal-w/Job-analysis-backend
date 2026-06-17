@@ -75,4 +75,11 @@ DATASOURCE_DEFAULT_PORTS: dict[DatasourceType, int] = {
     DatasourceType.FILE_JSON: 0,
     DatasourceType.KAFKA: 9092,
     DatasourceType.S3: 0,
+    DatasourceType.ELASTICSEARCH: 9200,
+    DatasourceType.CLICKHOUSE: 8123,
+    DatasourceType.FTP: 21,
+    DatasourceType.SFTP: 22,
+    DatasourceType.HTTP_WEBHOOK: 0,
+    DatasourceType.RABBITMQ: 5672,
+    DatasourceType.HIVE: 10000,
 }
