@@ -1,6 +1,12 @@
 from backend.app.admin.model.crawl_task import CrawlTask as CrawlTask
 from backend.app.admin.model.crawl_task import CrawlTaskLog as CrawlTaskLog
+from backend.app.admin.model.data_flow import DataFlow as DataFlow
+from backend.app.admin.model.data_flow import DataFlowRun as DataFlowRun
+from backend.app.admin.model.data_quality import QualityCheck as QualityCheck
+from backend.app.admin.model.data_quality import QualityRule as QualityRule
 from backend.app.admin.model.data_rule import DataRule as DataRule
+from backend.app.admin.model.data_storage import DataLayer as DataLayer
+from backend.app.admin.model.data_storage import Dataset as Dataset
 from backend.app.admin.model.data_scope import DataScope as DataScope
 from backend.app.admin.model.datasource import Datasource as Datasource
 from backend.app.admin.model.dept import Dept as Dept

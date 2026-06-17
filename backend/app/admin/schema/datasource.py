@@ -69,4 +69,10 @@ DATASOURCE_DEFAULT_PORTS: dict[DatasourceType, int] = {
     DatasourceType.REDIS: 6379,
     DatasourceType.MSSQL: 1433,
     DatasourceType.ORACLE: 1521,
+    DatasourceType.API_REST: 0,
+    DatasourceType.FILE_CSV: 0,
+    DatasourceType.FILE_EXCEL: 0,
+    DatasourceType.FILE_JSON: 0,
+    DatasourceType.KAFKA: 9092,
+    DatasourceType.S3: 0,
 }

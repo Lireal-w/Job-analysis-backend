@@ -127,6 +127,12 @@ class DatasourceService:
             DatasourceType.REDIS: _test_redis,
             DatasourceType.MSSQL: _test_mssql,
             DatasourceType.ORACLE: _test_oracle,
+            DatasourceType.API_REST: _test_api_rest,
+            DatasourceType.FILE_CSV: _test_file_csv,
+            DatasourceType.FILE_EXCEL: _test_file_excel,
+            DatasourceType.FILE_JSON: _test_file_json,
+            DatasourceType.KAFKA: _test_kafka,
+            DatasourceType.S3: _test_s3,
         }
 
         tester = testers.get(obj.db_type)
@@ -306,6 +312,178 @@ def _test_oracle(obj: DatasourceTestParam) -> dict[str, Any]:
         return {'success': False, 'message': '请安装 cx_Oracle 驱动: pip install cx_Oracle'}
     except Exception as e:
         return {'success': False, 'message': f'Oracle 连接失败: {str(e)}'}
+
+
+def _test_api_rest(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 REST API 连接"""
+    try:
+        import httpx
+
+        url = obj.host
+        if obj.extra_params:
+            try:
+                params = json.loads(obj.extra_params)
+                if isinstance(params, dict):
+                    from urllib.parse import urlencode
+                    url = url.rstrip('?') + '?' + urlencode(params)
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        with httpx.Client(timeout=10) as client:
+            response = client.get(url)
+            if response.status_code < 500:
+                return {'success': True, 'message': f'API 连接成功 (HTTP {response.status_code})', 'data': {'status_code': response.status_code}}
+            return {'success': False, 'message': f'API 返回错误状态码: {response.status_code}'}
+    except ImportError:
+        try:
+            import requests
+
+            url = obj.host
+            response = requests.get(url, timeout=10)
+            if response.status_code < 500:
+                return {'success': True, 'message': f'API 连接成功 (HTTP {response.status_code})', 'data': {'status_code': response.status_code}}
+            return {'success': False, 'message': f'API 返回错误状态码: {response.status_code}'}
+        except ImportError:
+            return {'success': False, 'message': '请安装 httpx 或 requests 库: pip install httpx'}
+        except Exception as e:
+            return {'success': False, 'message': f'API 连接失败: {str(e)}'}
+    except Exception as e:
+        return {'success': False, 'message': f'API 连接失败: {str(e)}'}
+
+
+def _test_file_csv(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 CSV 文件访问"""
+    import os
+
+    file_path = obj.host or obj.database_name or ''
+    if not file_path:
+        return {'success': False, 'message': '请提供文件路径'}
+    if not os.path.exists(file_path):
+        return {'success': False, 'message': f'文件不存在: {file_path}'}
+    if not os.access(file_path, os.R_OK):
+        return {'success': False, 'message': f'文件不可读: {file_path}'}
+    try:
+        import csv
+
+        with open(file_path, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            row_count = sum(1 for _ in reader)
+        return {'success': True, 'message': f'CSV 文件可访问', 'data': {'path': file_path, 'rows': row_count}}
+    except Exception as e:
+        return {'success': False, 'message': f'CSV 文件读取失败: {str(e)}'}
+
+
+def _test_file_excel(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 Excel 文件访问"""
+    import os
+
+    file_path = obj.host or obj.database_name or ''
+    if not file_path:
+        return {'success': False, 'message': '请提供文件路径'}
+    if not os.path.exists(file_path):
+        return {'success': False, 'message': f'文件不存在: {file_path}'}
+    if not os.access(file_path, os.R_OK):
+        return {'success': False, 'message': f'文件不可读: {file_path}'}
+    try:
+        import openpyxl
+
+        wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+        sheet_names = wb.sheetnames
+        sheet_count = len(sheet_names)
+        wb.close()
+        return {'success': True, 'message': 'Excel 文件可访问', 'data': {'path': file_path, 'sheets': sheet_count, 'sheet_names': sheet_names}}
+    except ImportError:
+        return {'success': False, 'message': '请安装 openpyxl 库: pip install openpyxl'}
+    except Exception as e:
+        return {'success': False, 'message': f'Excel 文件读取失败: {str(e)}'}
+
+
+def _test_file_json(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 JSON 文件访问"""
+    import os
+
+    file_path = obj.host or obj.database_name or ''
+    if not file_path:
+        return {'success': False, 'message': '请提供文件路径'}
+    if not os.path.exists(file_path):
+        return {'success': False, 'message': f'文件不存在: {file_path}'}
+    if not os.access(file_path, os.R_OK):
+        return {'success': False, 'message': f'文件不可读: {file_path}'}
+    try:
+        import json as json_lib
+
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json_lib.load(f)
+        data_type = type(data).__name__
+        size = len(data) if isinstance(data, (list, dict)) else 0
+        return {'success': True, 'message': 'JSON 文件可访问', 'data': {'path': file_path, 'type': data_type, 'size': size}}
+    except json.JSONDecodeError as e:
+        return {'success': False, 'message': f'JSON 解析失败: {str(e)}'}
+    except Exception as e:
+        return {'success': False, 'message': f'JSON 文件读取失败: {str(e)}'}
+
+
+def _test_kafka(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 Kafka 连接"""
+    import socket
+
+    host = obj.host or 'localhost'
+    port = obj.port or 9092
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
+        result = sock.connect_ex((host, port))
+        sock.close()
+        if result == 0:
+            return {'success': True, 'message': f'Kafka Broker 可达 ({host}:{port})', 'data': {'host': host, 'port': port}}
+        return {'success': False, 'message': f'Kafka Broker 不可达 ({host}:{port})'}
+    except Exception as e:
+        return {'success': False, 'message': f'Kafka 连接失败: {str(e)}'}
+
+
+def _test_s3(obj: DatasourceTestParam) -> dict[str, Any]:
+    """测试 S3/OSS 连接"""
+    try:
+        import boto3
+        from botocore.exceptions import ClientError, NoCredentialsError
+
+        bucket = obj.database_name or obj.host or ''
+        endpoint_url = obj.extra_params if obj.extra_params else None
+        try:
+            extra = json.loads(obj.extra_params) if obj.extra_params else {}
+        except (json.JSONDecodeError, TypeError):
+            extra = {}
+
+        client_kwargs = {}
+        if endpoint_url:
+            client_kwargs['endpoint_url'] = endpoint_url
+
+        if obj.username and obj.password:
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=obj.username,
+                aws_secret_access_key=obj.password,
+                **client_kwargs,
+            )
+        else:
+            s3_client = boto3.client('s3', **client_kwargs)
+
+        if bucket:
+            response = s3_client.list_objects_v2(Bucket=bucket, MaxKeys=5)
+            object_count = response.get('KeyCount', 0)
+            return {'success': True, 'message': f'S3 连接成功，Bucket: {bucket}', 'data': {'bucket': bucket, 'object_count': object_count}}
+        else:
+            buckets = s3_client.list_buckets()
+            bucket_list = [b['Name'] for b in buckets.get('Buckets', [])]
+            return {'success': True, 'message': 'S3 连接成功', 'data': {'buckets': bucket_list}}
+    except ImportError:
+        return {'success': False, 'message': '请安装 boto3 库: pip install boto3'}
+    except NoCredentialsError:
+        return {'success': False, 'message': 'S3 凭证无效'}
+    except ClientError as e:
+        return {'success': False, 'message': f'S3 访问失败: {e.response["Error"]["Message"]}'}
+    except Exception as e:
+        return {'success': False, 'message': f'S3 连接失败: {str(e)}'}
 
 
 datasource_service: DatasourceService = DatasourceService()

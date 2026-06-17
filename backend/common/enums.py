@@ -177,6 +177,12 @@ class DatasourceType(StrEnum):
     REDIS = 'redis'
     MSSQL = 'mssql'
     ORACLE = 'oracle'
+    API_REST = 'api_rest'
+    FILE_CSV = 'file_csv'
+    FILE_EXCEL = 'file_excel'
+    FILE_JSON = 'file_json'
+    KAFKA = 'kafka'
+    S3 = 's3'
 
 
 class CrawlMode(StrEnum):
