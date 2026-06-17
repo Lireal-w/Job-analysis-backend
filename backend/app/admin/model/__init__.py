@@ -17,6 +17,10 @@ from backend.app.admin.model.m2m import role_menu as role_menu
 from backend.app.admin.model.m2m import user_role as user_role
 from backend.app.admin.model.menu import Menu as Menu
 from backend.app.admin.model.opera_log import OperaLog as OperaLog
+from backend.app.admin.model.query import QueryHistory as QueryHistory
+from backend.app.admin.model.query import SavedQuery as SavedQuery
+from backend.app.admin.model.report import Report as Report
+from backend.app.admin.model.report import ReportWidget as ReportWidget
 from backend.app.admin.model.role import Role as Role
 from backend.app.admin.model.server import Server as Server
 from backend.app.admin.model.user import User as User
