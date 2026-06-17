@@ -16,6 +16,35 @@ from backend.app.admin.schema.datasource import (
 from backend.common.enums import DatasourceType
 from backend.common.exception import errors
 from backend.common.pagination import paging_data
+from backend.core.conf import settings
+from backend.utils.encrypt import AESCipher
+
+# 初始化 AES 加密器，使用 TOKEN_SECRET_KEY 派生密钥
+_aes_key = settings.TOKEN_SECRET_KEY.encode('utf-8').ljust(32, b'\0')[:32]
+_aes_cipher = AESCipher(_aes_key)
+
+
+def _encrypt_password(password: str | None) -> str | None:
+    """加密密码"""
+    if not password:
+        return password
+    return _aes_cipher.encrypt(password).hex()
+
+
+def _decrypt_password(password: str | None) -> str | None:
+    """解密密码"""
+    if not password:
+        return password
+    try:
+        return _aes_cipher.decrypt(bytes.fromhex(password))
+    except Exception:
+        return password
+
+
+def _decrypt_datasource_password(datasource: Datasource) -> None:
+    """原地解密数据源对象的密码字段"""
+    if datasource.password:
+        datasource.password = _decrypt_password(datasource.password)
 
 
 class DatasourceService:
@@ -26,24 +55,40 @@ class DatasourceService:
         datasource = await datasource_dao.get(db, pk)
         if not datasource:
             raise errors.NotFoundError(msg='数据源不存在')
+        _decrypt_datasource_password(datasource)
         return datasource
 
     @staticmethod
     async def get_all(*, db: AsyncSession) -> Sequence[Datasource]:
-        return await datasource_dao.get_all(db)
+        datasources = await datasource_dao.get_all(db)
+        for ds in datasources:
+            _decrypt_datasource_password(ds)
+        return datasources
 
     @staticmethod
     async def get_list(
         *, db: AsyncSession, name: str | None = None, db_type: str | None = None
     ) -> dict[str, Any]:
         select = await datasource_dao.get_select(name=name, db_type=db_type)
-        return await paging_data(db, select)
+        page_data = await paging_data(db, select)
+        # 解密返回数据中的密码
+        items = page_data.get('items', [])
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, dict) and item.get('password'):
+                    item['password'] = _decrypt_password(item['password'])
+                elif hasattr(item, 'password') and item.password:
+                    item.password = _decrypt_password(item.password)
+        return page_data
 
     @staticmethod
     async def create(*, db: AsyncSession, obj: CreateDatasourceParam) -> None:
         existing = await datasource_dao.get_by_name(db, obj.name)
         if existing:
             raise errors.ConflictError(msg='数据源名称已存在')
+        # 加密密码
+        if obj.password:
+            obj.password = _encrypt_password(obj.password)
         await datasource_dao.create(db, obj)
 
     @staticmethod
@@ -51,6 +96,9 @@ class DatasourceService:
         datasource = await datasource_dao.get(db, pk)
         if not datasource:
             raise errors.NotFoundError(msg='数据源不存在')
+        # 加密密码（如果有提供）
+        if obj.password is not None:
+            obj.password = _encrypt_password(obj.password)
         return await datasource_dao.update(db, pk, obj)
 
     @staticmethod

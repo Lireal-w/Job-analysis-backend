@@ -70,7 +70,7 @@ class CrawlTaskService:
 
         # 如果有调度配置，注册到 Celery Beat
         if obj.schedule_type != CrawlScheduleType.NONE:
-            await CrawlTaskService._register_schedule(task)
+            CrawlTaskService._register_schedule(task)
 
         return await crawl_task_dao.get(db, task.id)
 
@@ -179,6 +179,12 @@ class CrawlTaskService:
 
     @staticmethod
     async def delete(*, db: AsyncSession, pks: list[int]) -> int:
+        # Check if any task is running
+        for pk in pks:
+            task = await crawl_task_dao.get(db, pk)
+            if task and task.status == 'running':
+                raise errors.RequestError(msg=f'任务「{task.name}」正在运行中，无法删除')
+
         # 同时删除关联的日志
         for pk in pks:
             await crawl_task_log_dao.delete_by_task(db, pk)
@@ -204,7 +210,7 @@ class CrawlTaskService:
     # ── 调度管理 ──────────────────────────────────────────
 
     @staticmethod
-    async def _register_schedule(task: CrawlTask) -> None:
+    def _register_schedule(task: CrawlTask) -> None:
         """注册到 Celery Beat 调度"""
         schedule_name = f'crawl_task_{task.id}'
 

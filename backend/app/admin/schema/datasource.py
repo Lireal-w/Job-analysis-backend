@@ -24,8 +24,17 @@ class CreateDatasourceParam(DatasourceSchemaBase):
     """创建数据源参数"""
 
 
-class UpdateDatasourceParam(DatasourceSchemaBase):
+class UpdateDatasourceParam(SchemaBase):
     """更新数据源参数"""
+    name: str | None = Field(default=None, max_length=128, description='数据源名称')
+    db_type: DatasourceType | None = Field(default=None, description='数据库类型')
+    host: str | None = Field(default='localhost', max_length=256, description='主机地址')
+    port: int | None = Field(default=None, description='端口号')
+    database_name: str | None = Field(default=None, max_length=128, description='数据库名')
+    username: str | None = Field(default=None, max_length=128, description='用户名')
+    password: str | None = Field(default=None, max_length=512, description='密码')
+    extra_params: str | None = Field(default=None, description='额外连接参数(JSON格式)')
+    description: str | None = Field(default=None, max_length=256, description='描述')
 
 
 class GetDatasourceDetail(DatasourceSchemaBase):
