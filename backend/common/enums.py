@@ -177,6 +177,19 @@ class DatasourceType(StrEnum):
     REDIS = 'redis'
     MSSQL = 'mssql'
     ORACLE = 'oracle'
+    API_REST = 'api_rest'
+    FILE_CSV = 'file_csv'
+    FILE_EXCEL = 'file_excel'
+    FILE_JSON = 'file_json'
+    KAFKA = 'kafka'
+    S3 = 's3'
+    ELASTICSEARCH = 'elasticsearch'
+    CLICKHOUSE = 'clickhouse'
+    FTP = 'ftp'
+    SFTP = 'sftp'
+    HTTP_WEBHOOK = 'http_webhook'
+    RABBITMQ = 'rabbitmq'
+    HIVE = 'hive'
 
 
 class CrawlMode(StrEnum):

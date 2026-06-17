@@ -37,8 +37,30 @@ class CreateCrawlTaskParam(CrawlTaskSchemaBase):
     """创建采集任务参数"""
 
 
-class UpdateCrawlTaskParam(CrawlTaskSchemaBase):
+class UpdateCrawlTaskParam(SchemaBase):
     """更新采集任务参数"""
+    name: str | None = Field(default=None, max_length=128, description='任务名称')
+    description: str | None = Field(default=None, max_length=512, description='任务描述')
+    source_datasource_id: int | None = Field(default=None, description='源数据源 ID')
+    source_config: dict | None = Field(default=None, description='源采集配置')
+    target_storage: str | None = Field(default=None, max_length=32, description='目标存储类型')
+    target_datasource_id: int | None = Field(default=None, description='目标数据源 ID')
+    target_config: dict | None = Field(default=None, description='目标存储配置')
+    crawl_mode: CrawlMode | None = Field(default=None, description='采集模式')
+    incremental_key: str | None = Field(default=None, max_length=128, description='增量字段')
+    incremental_start: str | None = Field(default=None, max_length=64, description='增量起始值')
+    schedule_type: CrawlScheduleType | None = Field(default=None, description='调度类型')
+    cron_expr: str | None = Field(default=None, max_length=64, description='Cron 表达式')
+    interval_seconds: int | None = Field(default=None, ge=10, description='间隔秒数(>=10)')
+    concurrency: int | None = Field(default=None, ge=1, le=100, description='并发数')
+    batch_size: int | None = Field(default=None, ge=1, le=10000, description='每批处理条数')
+    rate_limit: int | None = Field(default=None, ge=0, description='速率限制(请求/秒)')
+    retry_enabled: bool | None = Field(default=None, description='是否启用重试')
+    max_retries: int | None = Field(default=None, ge=0, le=20, description='最大重试次数')
+    retry_delay: int | None = Field(default=None, ge=1, description='重试间隔(秒)')
+    retry_backoff: bool | None = Field(default=None, description='是否启用退避策略')
+    priority: CrawlPriority | None = Field(default=None, description='优先级')
+    tags: str | None = Field(default=None, max_length=256, description='标签(逗号分隔)')
 
 
 class GetCrawlTaskDetail(CrawlTaskSchemaBase):
