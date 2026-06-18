@@ -69,6 +69,14 @@ class DataFlowService:
             raise errors.NotFoundError(msg='数据流不存在')
         if data_flow.status != 'published':
             raise errors.ForbiddenError(msg='仅已发布的数据流可以运行')
+
+        # 校验节点和边配置
+        nodes = data_flow.nodes or []
+        edges = data_flow.edges or []
+        if not nodes:
+            raise errors.RequestError(msg='数据流未配置节点')
+
+        # 创建运行记录
         run_id = str(uuid.uuid4())
         run_record = {
             'flow_id': pk,
@@ -80,11 +88,22 @@ class DataFlowService:
             'total_error': 0,
         }
         created = await data_flow_run_dao.create_run(db, run_record)
+
+        # 异步派发 Celery 任务
+        from backend.app.task.tasks.etl.tasks import etl_run_flow
+
+        etl_run_flow.delay(
+            flow_id=pk,
+            run_record_id=created.id,
+            nodes=nodes,
+            edges=edges,
+        )
+
         return {
             'run_id': run_id,
             'flow_id': pk,
             'status': 'running',
-            'record_id': created.id if hasattr(created, 'id') else None,
+            'record_id': created.id,
         }
 
     @staticmethod
