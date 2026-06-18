@@ -50,7 +50,11 @@ class CRUDDataFlowRun(CRUDPlus[DataFlowRun]):
         return await self.select_models(db, flow_id=flow_id)
 
     async def create_run(self, db: AsyncSession, obj: dict) -> DataFlowRun:
-        return await self.create_model(db, obj)
+        model = self.model(**obj)
+        db.add(model)
+        await db.flush()
+        await db.refresh(model)
+        return model
 
     async def update_run(self, db: AsyncSession, pk: int, obj: dict) -> int:
         return await self.update_model(db, pk, obj)
