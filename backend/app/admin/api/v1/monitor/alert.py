@@ -94,6 +94,27 @@ async def delete_alert_rules(
     return response_base.fail()
 
 
+@router.post('/rules/{pk}/evaluate', summary='手动触发告警规则评估', dependencies=[DependsJwtAuth])
+async def evaluate_alert_rule(
+    db: CurrentSession,
+    pk: Annotated[int, Path(description='规则 ID')],
+    metric_value: Annotated[float | None, Query(description='指标值（可选）')] = None,
+) -> ResponseSchemaModel[dict]:
+    """手动触发告警规则评估，根据当前指标值判断是否触发告警"""
+    data = await alert_rule_service.evaluate(db=db, pk=pk, metric_value=metric_value)
+    return response_base.success(data=data)
+
+
+@router.post('/rules/evaluate-all', summary='评估所有启用的告警规则', dependencies=[DependsJwtAuth])
+async def evaluate_all_alert_rules(
+    db: CurrentSession,
+    metric_type: Annotated[str | None, Query(description='指标类型（可选）')] = None,
+) -> ResponseSchemaModel[list[dict]]:
+    """评估所有启用的告警规则，可选按指标类型过滤"""
+    data = await alert_rule_service.evaluate_all(db=db, metric_type=metric_type)
+    return response_base.success(data=data)
+
+
 # ── Alert History ────────────────────────────────────────────
 
 
