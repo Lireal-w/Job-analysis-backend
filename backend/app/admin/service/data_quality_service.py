@@ -3,11 +3,13 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.admin.crud.crud_data_quality import quality_check_dao, quality_rule_dao
 from backend.app.admin.model import QualityCheck, QualityRule
 from backend.app.admin.schema.data_quality import CreateQualityRuleParam, UpdateQualityRuleParam
+from backend.app.admin.service.data_quality import execute_quality_check
 from backend.common.exception import errors
 from backend.common.pagination import paging_data
 from backend.utils.timezone import timezone
@@ -64,10 +66,21 @@ class QualityRuleService:
 
     @staticmethod
     async def run_check(*, db: AsyncSession, pk: int) -> dict[str, Any]:
-        """运行质量检查"""
+        """运行质量检查
+
+        使用真实的规则执行引擎进行检查，支持以下规则类型：
+        - not_null: 检查字段是否为空
+        - unique: 检查字段值是否唯一
+        - range: 检查字段值是否在指定范围内
+        - regex: 检查字段值是否匹配正则表达式
+        - custom_sql: 执行自定义 SQL 并根据结果判断
+        """
         rule = await quality_rule_dao.get(db, pk)
         if not rule:
             raise errors.NotFoundError(msg='质量规则不存在')
+
+        if not rule.enabled:
+            raise errors.RequestError(msg='规则已禁用，无法执行检查')
 
         run_id = str(uuid.uuid4())
         now = timezone.now()
@@ -85,49 +98,72 @@ class QualityRuleService:
         check = await quality_check_dao.create_check(db, check_data)
 
         try:
-            # 模拟执行检查逻辑
-            import random
+            # 使用真实的规则执行引擎
+            result = await execute_quality_check(rule)
 
-            total = random.randint(100, 10000)
-            passed = random.randint(int(total * 0.8), total)
-            failed = total - passed
-            score = round((passed / total) * 100, 2) if total > 0 else 0.0
+            end_time = timezone.now()
+            duration = (end_time - now).total_seconds()
+
+            if result.is_success:
+                update_data = {
+                    'status': 'success',
+                    'end_time': end_time,
+                    'duration': duration,
+                    'total_checked': result.total_checked,
+                    'total_passed': result.total_passed,
+                    'total_failed': result.total_failed,
+                    'score': result.score,
+                }
+            else:
+                update_data = {
+                    'status': 'failed',
+                    'end_time': end_time,
+                    'duration': duration,
+                    'total_checked': result.total_checked,
+                    'total_passed': result.total_passed,
+                    'total_failed': result.total_failed,
+                    'score': result.score,
+                    'error_message': result.error_message,
+                }
+
+            await quality_check_dao.update_check(db, check.id, update_data)
+
+            # 触发数据质量告警
+            try:
+                await trigger_quality_alert(rule, result, db)
+            except Exception as e:
+                logger.warning(f'[QualityCheck] 触发告警失败（不影响检查结果）: {e}')
+
+            return {
+                'check_id': check.id,
+                'run_id': run_id,
+                'status': update_data['status'],
+                'score': result.score,
+                'total_checked': result.total_checked,
+                'total_passed': result.total_passed,
+                'total_failed': result.total_failed,
+                'duration': duration,
+                'details': result.details,
+                'error_message': result.error_message,
+            }
+        except Exception as e:
+            logger.error(f'[QualityCheck] 规则 {pk} 执行失败: {e}')
             end_time = timezone.now()
             duration = (end_time - now).total_seconds()
 
             update_data = {
-                'status': 'success',
+                'status': 'failed',
                 'end_time': end_time,
                 'duration': duration,
-                'total_checked': total,
-                'total_passed': passed,
-                'total_failed': failed,
-                'score': score,
+                'error_message': f'{type(e).__name__}: {e}',
             }
             await quality_check_dao.update_check(db, check.id, update_data)
 
             return {
                 'check_id': check.id,
                 'run_id': run_id,
-                'status': 'success',
-                'score': score,
-                'total_checked': total,
-                'total_passed': passed,
-                'total_failed': failed,
-                'duration': duration,
-            }
-        except Exception as e:
-            update_data = {
                 'status': 'failed',
-                'end_time': timezone.now(),
-                'error_message': str(e),
-            }
-            await quality_check_dao.update_check(db, check.id, update_data)
-            return {
-                'check_id': check.id,
-                'run_id': run_id,
-                'status': 'failed',
-                'error_message': str(e),
+                'error_message': f'{type(e).__name__}: {e}',
             }
 
     @staticmethod
@@ -148,3 +184,38 @@ class QualityRuleService:
 
 
 quality_rule_service: QualityRuleService = QualityRuleService()
+
+
+async def trigger_quality_alert(
+    rule: QualityRule,
+    result: Any,
+    db: AsyncSession,
+) -> None:
+    """质量检查完成后触发告警
+
+    当质量评分低于阈值时，查找匹配的告警规则并触发告警。
+
+    Args:
+        rule: 质量规则 ORM 对象
+        result: QualityCheckResult 检查结果
+        db: 数据库会话
+    """
+    from backend.app.admin.crud.crud_alert import alert_rule_dao
+    from backend.app.admin.service.alert.evaluator import evaluate_alert_rule
+
+    # 查找 data_quality 类型的告警规则
+    alert_rules = await alert_rule_dao.get_all(db)
+    quality_alert_rules = [
+        r for r in alert_rules
+        if r.metric_type == 'data_quality' and r.enabled
+    ]
+
+    if not quality_alert_rules:
+        return
+
+    for alert_rule in quality_alert_rules:
+        try:
+            # 使用质量评分作为指标值
+            await evaluate_alert_rule(alert_rule, db, metric_value=result.score)
+        except Exception as e:
+            logger.error(f'[QualityAlert] 触发告警规则 {alert_rule.name} 失败: {e}')
