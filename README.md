@@ -15,6 +15,9 @@
 - 🔐 **安全认证**：JWT + RBAC 权限控制体系
 - 📊 **远程服务器管理**：支持 SSH / SFTP / Telnet / RDP / VNC / HTTP / HTTPS 多协议连接测试
 - ✅ **待办事项管理**：任务拆解、阶段性目标、AI 自动分阶段、进度追踪
+- 🔍 **数据质量管理**：完整性/唯一性/范围/自定义规则引擎 + 告警通知
+- 📈 **查询引擎**：多数据源 SQL 查询执行 + 表结构自动发现
+- 🔄 **ETL 管道**：DAG 编排、多源读取/转换/写入、Python 脚本安全沙箱
 - 🌐 **国际化支持**：内置 i18n 多语言支持
 - 🚢 **容器化部署**：完整的 Docker Compose 编排，一键启动全套服务
 - 📈 **可观测性**：集成 Grafana、Prometheus、OpenTelemetry 等监控组件
@@ -46,10 +49,17 @@ fastapi-best-architecture/
 │   ├── app/                        # 应用主目录
 │   │   ├── admin/                  # 后台管理模块
 │   │   │   ├── api/v1/sys/         # 系统管理 API（用户/角色/菜单/SSH/Worker等）
+│   │   │   ├── api/v1/monitor/      # 监控管理 API（告警/数据质量/查询）
 │   │   │   ├── crud/               # CRUD 操作层
 │   │   │   ├── model/              # SQLAlchemy ORM 模型层
 │   │   │   ├── schema/             # Pydantic 数据验证层
 │   │   │   ├── service/            # 业务逻辑层
+│   │   │   │   ├── crawl/          # 爬虫服务（执行器/进度追踪/读取器/写入器）
+│   │   │   │   ├── data_quality/   # 数据质量规则引擎
+│   │   │   │   ├── alert/          # 告警评估与分发
+│   │   │   │   ├── datasource/     # 数据源连接池管理
+│   │   │   │   ├── etl/            # ETL 管道引擎（DAG/节点/上下文）
+│   │   │   │   └── query/          # 查询引擎
 │   │   │   └── tests/              # 测试用例
 │   │   ├── todo/                   # 待办事项模块（独立子应用）
 │   │   │   ├── api/v1/             # 待办 API
@@ -60,9 +70,12 @@ fastapi-best-architecture/
 │   │   │   └── tests/              # 待办测试
 │   │   ├── task/                   # Celery 任务模块
 │   │   │   ├── api/v1/             # 任务调度 API
+│   │   │   ├── api/v1/dynamic_schedule.py  # 动态调度 API（Redis 实时调度）
 │   │   │   ├── crud/               # 任务 CRUD
 │   │   │   ├── model/              # 任务模型
+│   │   │   ├── schema/             # 任务 Schema
 │   │   │   ├── service/            # 任务服务
+│   │   │   ├── utils/              # 工具（调度器/RedBeat 动态调度）
 │   │   │   └── tasks/              # Celery 任务定义
 │   │   └── router.py               # 全局路由注册
 │   ├── agent/                      # Worker 从节点（独立可部署）
@@ -255,6 +268,14 @@ Worker 启动后自动：
 | | GET/POST/PUT | `/api/v1/todos` | 任务 CRUD |
 | | POST | `/api/v1/todo-goals/ai-generate/{id}` | AI 自动分阶段目标 |
 | **任务调度** | GET/POST/PUT | `/api/v1/schedulers` | Celery 定时任务管理 |
+| **动态调度** | GET/POST/PUT/DELETE | `/api/v1/dynamic-schedules` | Redis 实时动态调度 |
+| **数据质量** | POST | `/api/v1/monitor/data-quality/evaluate` | 执行数据质量规则 |
+| **告警管理** | POST | `/api/v1/monitor/alerts/evaluate` | 执行告警评估 |
+| | GET | `/api/v1/monitor/alerts/{id}/dispatch-records` | 告警分发记录 |
+| **查询引擎** | POST | `/api/v1/sys/query/execute` | 执行 SQL 查询 |
+| | GET | `/api/v1/sys/query/schema/{datasource_id}` | 获取数据源表结构 |
+| **采集进度** | GET | `/api/v1/sys/crawl-tasks/{pk}/progress` | 实时采集进度 |
+| | PUT | `/api/v1/sys/crawl-tasks/{pk}/stop` | 取消采集任务 |
 | **职位管理** | GET/POST/PUT | `/api/v1/jobs/pg` | 职位 PostgreSQL CRUD |
 | | GET | `/api/v1/jobs/mongo` | MongoDB 职位数据查询 |
 
@@ -281,6 +302,39 @@ Worker 启动后自动：
 - 通过 Worker 集群分发爬虫任务
 - 支持 Scrapy 框架
 - MongoDB 数据存储
+- 实时进度追踪（Redis + Socket.IO）
+- 任务取消与断点续传
+
+### 数据质量管理
+- 规则引擎：完整性检查、唯一性检查、范围检查、自定义规则
+- 告警触发：规则评估失败自动触发告警
+- 告警分发：邮件通知、Webhook 回调
+- 告警模板：可自定义告警邮件模板
+
+### 查询引擎
+- 多数据源 SQL 查询执行
+- 表结构自动发现（schema 接口）
+- SQL 安全检查（禁止写操作、限制返回行数）
+- 查询超时控制
+
+### ETL 管道引擎
+- DAG 有向无环图编排
+- 多源读取：数据库、API、CSV、JSON
+- 多种转换：过滤、选择、映射、聚合、排序、Python 脚本
+- 多目标写入：数据库、CSV、JSON
+- Python 脚本安全沙箱（禁止危险模块/函数、超时控制）
+
+### 数据源连接池管理
+- 基于 datasource_id 缓存 SQLAlchemy Engine
+- 连接健康检查和自动回收
+- 最大连接数限制和空闲超时清理
+- 连接池统计信息查询
+
+### 动态调度（RedBeat）
+- 基于 Redis 的 Celery Beat 调度器
+- 任务创建/修改/删除实时生效
+- 支持分布式调度（多 Beat 实例自动选主）
+- 兼容现有 DatabaseScheduler，可配置切换
 
 ## 🔧 配置说明
 
@@ -304,6 +358,7 @@ TOKEN_SECRET_KEY='your-secret-key'
 
 # Celery
 CELERY_BROKER='redis'          # redis / rabbitmq
+CELERY_BEAT_SCHEDULER_TYPE='database'  # database（默认）/ redbeat（动态调度）
 ```
 
 ## 📄 License
