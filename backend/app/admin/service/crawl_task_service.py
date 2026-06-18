@@ -134,10 +134,19 @@ class CrawlTaskService:
             kwargs={
                 'crawl_mode': task.crawl_mode,
                 'source_datasource_id': task.source_datasource_id,
-                'source_config': task.source_config,
+                'source_config': task.source_config or {},
                 'target_storage': task.target_storage,
                 'target_datasource_id': task.target_datasource_id,
-                'target_config': task.target_config,
+                'target_config': task.target_config or {},
+                'incremental_key': task.incremental_key,
+                'incremental_start': task.incremental_start,
+                'concurrency': task.concurrency or 1,
+                'batch_size': task.batch_size or 100,
+                'rate_limit': task.rate_limit or 0,
+                'retry_enabled': task.retry_enabled if task.retry_enabled is not None else True,
+                'max_retries': task.max_retries or 3,
+                'retry_delay': task.retry_delay or 60,
+                'retry_backoff': task.retry_backoff if task.retry_backoff is not None else True,
             },
         )
 
