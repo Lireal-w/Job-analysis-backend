@@ -18,13 +18,13 @@ router = APIRouter()
 
 
 @router.get('/rules/all', summary='获取所有质量规则', dependencies=[DependsJwtAuth])
-async def get_all_rules(db: CurrentSession) -> ResponseSchemaModel[list[GetQualityRuleDetail]]:
+async def get_all_quality_rules(db: CurrentSession) -> ResponseSchemaModel[list[GetQualityRuleDetail]]:
     data = await quality_rule_service.get_all(db=db)
     return response_base.success(data=data)
 
 
 @router.get('/rules/{pk}', summary='获取质量规则详情', dependencies=[DependsJwtAuth])
-async def get_rule(
+async def get_quality_rule(
     db: CurrentSession,
     pk: Annotated[int, Path(description='规则 ID')],
 ) -> ResponseSchemaModel[GetQualityRuleDetail]:
@@ -37,7 +37,7 @@ async def get_rule(
     summary='分页获取质量规则列表',
     dependencies=[DependsJwtAuth, DependsPagination],
 )
-async def get_rules_paginated(
+async def get_quality_rules_paginated(
     db: CurrentSession,
     name: Annotated[str | None, Query(description='规则名称')] = None,
     rule_type: Annotated[str | None, Query(description='规则类型')] = None,
@@ -55,7 +55,7 @@ async def get_rules_paginated(
 
 
 @router.post('/rules', summary='创建质量规则', dependencies=[DependsJwtAuth])
-async def create_rule(
+async def create_quality_rule(
     db: CurrentSessionTransaction,
     obj: CreateQualityRuleParam,
 ) -> ResponseModel:
@@ -64,7 +64,7 @@ async def create_rule(
 
 
 @router.put('/rules/{pk}', summary='更新质量规则', dependencies=[DependsJwtAuth])
-async def update_rule(
+async def update_quality_rule(
     db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='规则 ID')],
     obj: UpdateQualityRuleParam,
@@ -76,7 +76,7 @@ async def update_rule(
 
 
 @router.delete('/rules', summary='批量删除质量规则', dependencies=[DependsJwtAuth])
-async def delete_rules(
+async def delete_quality_rules(
     db: CurrentSessionTransaction,
     pks: Annotated[list[int], Query(description='规则 ID 列表')],
 ) -> ResponseModel:

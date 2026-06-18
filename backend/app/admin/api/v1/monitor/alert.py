@@ -23,13 +23,13 @@ router = APIRouter()
 
 
 @router.get('/rules/all', summary='获取所有告警规则', dependencies=[DependsJwtAuth])
-async def get_all_rules(db: CurrentSession) -> ResponseSchemaModel[list[GetAlertRuleDetail]]:
+async def get_all_alert_rules(db: CurrentSession) -> ResponseSchemaModel[list[GetAlertRuleDetail]]:
     data = await alert_rule_service.get_all(db=db)
     return response_base.success(data=data)
 
 
 @router.get('/rules/{pk}', summary='获取告警规则详情', dependencies=[DependsJwtAuth])
-async def get_rule(
+async def get_alert_rule(
     db: CurrentSession,
     pk: Annotated[int, Path(description='规则 ID')],
 ) -> ResponseSchemaModel[GetAlertRuleDetail]:
@@ -42,7 +42,7 @@ async def get_rule(
     summary='分页获取告警规则列表',
     dependencies=[DependsJwtAuth, DependsPagination],
 )
-async def get_rules_paginated(
+async def get_alert_rules_paginated(
     db: CurrentSession,
     name: Annotated[str | None, Query(description='规则名称')] = None,
     metric_type: Annotated[str | None, Query(description='指标类型')] = None,
@@ -56,7 +56,7 @@ async def get_rules_paginated(
 
 
 @router.post('/rules', summary='创建告警规则', dependencies=[DependsJwtAuth])
-async def create_rule(
+async def create_alert_rule(
     db: CurrentSessionTransaction,
     obj: CreateAlertRuleParam,
 ) -> ResponseModel:
@@ -65,7 +65,7 @@ async def create_rule(
 
 
 @router.put('/rules/{pk}', summary='更新告警规则', dependencies=[DependsJwtAuth])
-async def update_rule(
+async def update_alert_rule(
     db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='规则 ID')],
     obj: UpdateAlertRuleParam,
@@ -84,7 +84,7 @@ async def update_rule(
         DependsRBAC,
     ],
 )
-async def delete_rules(
+async def delete_alert_rules(
     db: CurrentSessionTransaction,
     pks: Annotated[list[int], Query(description='规则 ID 列表')],
 ) -> ResponseModel:
