@@ -94,3 +94,13 @@ async def delete_saved_queries(
     if count > 0:
         return response_base.success()
     return response_base.fail()
+
+
+@router.get('/schema/{dataset_id}', summary='获取数据源表结构', dependencies=[DependsJwtAuth])
+async def get_datasource_schema(
+    db: CurrentSession,
+    dataset_id: Annotated[int, Path(description='数据源 ID')],
+) -> ResponseSchemaModel[dict]:
+    """获取数据源的表结构信息，用于查询构建器"""
+    data = await query_service.get_datasource_schema(db=db, dataset_id=dataset_id)
+    return response_base.success(data=data)
