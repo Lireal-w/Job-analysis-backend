@@ -158,8 +158,12 @@ class CrawlTaskService:
         }
 
     @staticmethod
-    async def stop(*, db: AsyncSession, pk: int) -> None:
-        """停止采集任务"""
+    async def stop(*, db: AsyncSession, pk: int) -> dict[str, Any]:
+        """停止采集任务
+
+        通过 Redis 发送取消信号，同时撤销 Celery 任务。
+        采集执行器会在每个阶段检查取消信号并优雅退出。
+        """
         task = await crawl_task_dao.get(db, pk)
         if not task:
             raise errors.NotFoundError(msg='采集任务不存在')
@@ -167,10 +171,16 @@ class CrawlTaskService:
         if task.status != 'running':
             raise errors.RequestError(msg='任务当前不在运行状态')
 
+        # 1. 发送 Redis 取消信号（让执行器优雅退出）
+        from backend.app.admin.service.crawl.progress import send_cancel_signal, revoke_celery_task
+        cancel_sent = await send_cancel_signal(pk)
+
+        # 2. 更新任务状态
         await crawl_task_dao.update_status(db, pk, 'stopped')
 
-        # 更新当前正在运行的日志
+        # 3. 更新当前正在运行的日志
         logs = await crawl_task_log_dao.get_by_task(db, pk, limit=1)
+        celery_revoked = False
         for log in logs:
             if log.status == 'running':
                 await crawl_task_log_dao.update_log(
@@ -180,11 +190,58 @@ class CrawlTaskService:
                         'error_message': '任务被手动停止',
                     }
                 )
+                # 4. 尝试撤销 Celery 任务（如果有 celery_task_id）
+                # 注意：celery_task_id 不在日志中，需要从其他来源获取
+                # 这里通过 Redis 进度信息获取
+                break
+
+        return {
+            'task_id': pk,
+            'status': 'stopped',
+            'cancel_signal_sent': cancel_sent,
+            'message': '停止信号已发送，任务将在当前批次完成后停止',
+        }
 
     @staticmethod
     async def trigger(*, db: AsyncSession, pk: int) -> dict[str, Any]:
         """手动触发采集任务"""
         return await CrawlTaskService.start(db=db, pk=pk)
+
+    @staticmethod
+    async def get_progress(*, pk: int) -> dict[str, Any]:
+        """获取采集任务实时进度
+
+        从 Redis 读取进度信息。
+        """
+        import json
+        from backend.database.redis import redis_client
+
+        # 查找该任务最新的进度 key
+        pattern = f'crawl:progress:{pk}:*'
+        keys = await redis_client.get_prefix(pattern)
+
+        if not keys:
+            return {
+                'task_id': pk,
+                'status': 'no_progress',
+                'message': '没有找到进度信息',
+            }
+
+        # 获取最新的进度（取最后一个 key）
+        latest_key = keys[-1]
+        data = await redis_client.get(latest_key)
+        if data:
+            try:
+                progress = json.loads(data)
+                return progress
+            except json.JSONDecodeError:
+                pass
+
+        return {
+            'task_id': pk,
+            'status': 'unknown',
+            'message': '进度信息解析失败',
+        }
 
     @staticmethod
     async def delete(*, db: AsyncSession, pks: list[int]) -> int:

@@ -126,9 +126,18 @@ async def start_crawl_task(
 async def stop_crawl_task(
     db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='任务 ID')],
-) -> ResponseModel:
-    await crawl_task_service.stop(db=db, pk=pk)
-    return response_base.success()
+) -> ResponseSchemaModel[dict]:
+    data = await crawl_task_service.stop(db=db, pk=pk)
+    return response_base.success(data=data)
+
+
+@router.get('/{pk}/progress', summary='获取采集任务实时进度', dependencies=[DependsJwtAuth])
+async def get_crawl_task_progress(
+    pk: Annotated[int, Path(description='任务 ID')],
+) -> ResponseSchemaModel[dict]:
+    """从 Redis 获取采集任务的实时进度信息"""
+    data = await crawl_task_service.get_progress(pk=pk)
+    return response_base.success(data=data)
 
 
 @router.post('/{pk}/trigger', summary='手动触发采集任务', dependencies=[DependsJwtAuth])

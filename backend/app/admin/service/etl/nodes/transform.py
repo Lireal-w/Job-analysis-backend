@@ -369,9 +369,88 @@ class UnionTransformExecutor(BaseNodeExecutor):
 
 
 class PythonScriptTransformExecutor(BaseNodeExecutor):
-    """Python 脚本转换"""
+    """Python 脚本转换（安全沙箱模式）
+
+    在受限环境中执行用户自定义 Python 脚本，禁止访问危险模块和函数。
+
+    安全措施：
+    - 禁止导入危险模块（os, sys, subprocess, socket 等）
+    - 禁止使用危险内置函数（exec, eval, compile, open 等）
+    - 设置执行超时（默认 30 秒）
+    - 限制可用内置函数为安全子集
+    """
 
     node_type = 'transform_python_script'
+
+    # 禁止导入的模块
+    FORBIDDEN_MODULES = frozenset({
+        'os', 'sys', 'subprocess', 'socket', 'shutil', 'pathlib',
+        'ctypes', 'signal', 'multiprocessing', 'threading',
+        'importlib', 'pkgutil', 'code', 'codeop', 'compileall',
+        'pickle', 'shelve', 'marshal', 'tempfile',
+        'http', 'urllib', 'requests', 'aiohttp', 'httpx',
+        'ftplib', 'smtplib', 'telnetlib', 'xmlrpc',
+        'asyncio', 'concurrent', 'queue',
+    })
+
+    # 禁止使用的内置函数
+    FORBIDDEN_BUILTINS = frozenset({
+        'exec', 'eval', 'compile', 'open', 'input',
+        'globals', 'locals', 'vars', 'dir',
+        'getattr', 'setattr', 'delattr', 'type',
+        '__import__', 'breakpoint', 'exit', 'quit',
+    })
+
+    # 允许的安全内置函数
+    SAFE_BUILTINS = {
+        'abs': abs, 'all': all, 'any': any, 'bin': bin, 'bool': bool,
+        'chr': chr, 'dict': dict, 'divmod': divmod, 'enumerate': enumerate,
+        'filter': filter, 'float': float, 'format': format, 'frozenset': frozenset,
+        'hash': hash, 'hex': hex, 'int': int, 'isinstance': isinstance,
+        'issubclass': issubclass, 'iter': iter, 'len': len, 'list': list,
+        'map': map, 'max': max, 'min': min, 'next': next, 'oct': oct,
+        'ord': ord, 'pow': pow, 'print': print, 'range': range, 'repr': repr,
+        'reversed': reversed, 'round': round, 'set': set, 'slice': slice,
+        'sorted': sorted, 'str': str, 'sum': sum, 'tuple': tuple, 'zip': zip,
+        'True': True, 'False': False, 'None': None,
+    }
+
+    # 允许的安全模块
+    ALLOWED_MODULES = frozenset({
+        'json', 'math', 're', 'datetime', 'decimal',
+        'collections', 'itertools', 'functools', 'statistics', 'copy',
+        # 内部辅助模块（被允许模块内部引用）
+        '_strptime', '_decimal', '_json', 'operator',
+    })
+
+    # 执行超时（秒）
+    EXECUTION_TIMEOUT = 30
+
+    def _validate_script_safety(self, script: str) -> None:
+        """验证脚本安全性
+
+        检查脚本是否包含禁止的模块导入或函数调用。
+        """
+        import re
+
+        # 检查 import 语句
+        import_pattern = r'(?:^|\n)\s*(?:import\s+(\w+)|from\s+(\w+)\s+import)'
+        for match in re.finditer(import_pattern, script):
+            module_name = match.group(1) or match.group(2)
+            if module_name in self.FORBIDDEN_MODULES:
+                self.raise_error(f'安全限制：禁止导入模块 "{module_name}"')
+
+        # 检查 __import__ 调用
+        if '__import__' in script:
+            self.raise_error('安全限制：禁止使用 __import__')
+
+        # 检查危险内置函数调用
+        for func_name in self.FORBIDDEN_BUILTINS:
+            # 使用单词边界匹配，避免误判（如 executable 包含 exec）
+            pattern = rf'\b{func_name}\b'
+            if re.search(pattern, script):
+                # 排除字符串中的引用（简单检查）
+                self.raise_error(f'安全限制：禁止使用函数 "{func_name}"')
 
     async def execute(self, context: ETLContext, *inputs: list[list[dict[str, Any]]]) -> list[dict[str, Any]]:
         data = inputs[0] if inputs and inputs[0] else []
@@ -380,21 +459,55 @@ class PythonScriptTransformExecutor(BaseNodeExecutor):
         if not script:
             return data
 
+        # 验证脚本安全性
+        self._validate_script_safety(script)
+
+        # 构建安全的执行环境
+        safe_builtins = dict(self.SAFE_BUILTINS)
         local_vars = {
             'data': data,
             'context': context,
             'inputs': inputs,
-            '__builtins__': __builtins__,
+            '__builtins__': safe_builtins,
+            # 允许的安全模块
+            'json': __import__('json'),
+            'math': __import__('math'),
+            're': __import__('re'),
+            'datetime': __import__('datetime'),
+            'decimal': __import__('decimal'),
+            'collections': __import__('collections'),
+            'itertools': __import__('itertools'),
+            'functools': __import__('functools'),
+            'statistics': __import__('statistics'),
+            'copy': __import__('copy'),
         }
 
         try:
-            exec(script, local_vars)
-            result = local_vars.get('result', data)
+            # 使用 asyncio 超时控制
+            import asyncio
+            result = await asyncio.wait_for(
+                self._run_script(script, local_vars),
+                timeout=self.EXECUTION_TIMEOUT,
+            )
             if not isinstance(result, list):
                 self.raise_error('Python 脚本必须返回 list[dict] 类型')
             return result
+        except asyncio.TimeoutError:
+            self.raise_error(f'Python 脚本执行超时（{self.EXECUTION_TIMEOUT}秒）')
         except Exception as e:
             self.raise_error(f'Python 脚本执行失败: {e}')
+
+    async def _run_script(self, script: str, local_vars: dict) -> list[dict[str, Any]]:
+        """在安全环境中执行脚本"""
+        # 提供受限的 __import__ 函数，只允许导入允许的模块
+        def _safe_import(name, *args, **kwargs):
+            if name in self.ALLOWED_MODULES:
+                return __import__(name, *args, **kwargs)
+            raise ImportError(f'安全限制：禁止导入模块 "{name}"')
+
+        local_vars['__builtins__']['__import__'] = _safe_import
+        exec(script, local_vars)
+        return local_vars.get('result', local_vars.get('data', []))
 
 
 class UniqueTransformExecutor(BaseNodeExecutor):

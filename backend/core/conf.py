@@ -274,6 +274,8 @@ class Settings(BaseSettings):
     CELERY_RABBITMQ_VHOST: str = ''
     CELERY_REDIS_PREFIX: str = 'fba:celery'
     CELERY_TASK_MAX_RETRIES: int = 5
+    # Beat 调度器类型：database（默认，基于数据库轮询）或 redbeat（基于 Redis，支持动态调度）
+    CELERY_BEAT_SCHEDULER_TYPE: Literal['database', 'redbeat'] = 'database'
 
     ##################################################
     # [ Plugin ] code_generator

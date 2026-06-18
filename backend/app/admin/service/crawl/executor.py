@@ -22,6 +22,7 @@ from loguru import logger
 
 from backend.app.admin.service.crawl.context import CrawlContext
 from backend.app.admin.service.crawl.exceptions import CrawlError
+from backend.app.admin.service.crawl.progress import CrawlProgressTracker
 from backend.app.admin.service.crawl.readers import BaseSourceReader, get_source_reader
 from backend.app.admin.service.crawl.writers import BaseTargetWriter, get_target_writer
 
@@ -83,6 +84,9 @@ class CrawlExecutor:
         self.source_reader: BaseSourceReader = get_source_reader(source_type, source_config)
         self.target_writer: BaseTargetWriter = get_target_writer(target_type, target_config)
 
+        # 进度追踪器
+        self.progress = CrawlProgressTracker(task_id=task_id, run_id=run_id)
+
     async def execute(self) -> CrawlContext:
         """执行采集任务
 
@@ -97,20 +101,38 @@ class CrawlExecutor:
 
         try:
             # 1. 从源读取数据
+            await self.progress.update_progress('reading', 0, 0, {'message': '正在读取数据源'})
             data = await self._read_with_retry()
 
             self.context.total_found = len(data)
             logger.info(f'[Crawl] 从源读取到 {len(data)} 条记录')
 
+            # 检查取消信号
+            if await self.progress.is_cancelled():
+                logger.info(f'[Crawl] 任务被取消 task_id={self.task_id}')
+                self.context.error_message = '任务被用户取消'
+                await self.progress.clear_cancel_signal()
+                return self.context
+
             # 2. 增量过滤
             if self.crawl_mode == 'incremental' and self.context.incremental_key:
+                await self.progress.update_progress('filtering', 0, len(data), {'message': '增量过滤中'})
                 data = self._apply_incremental_filter(data)
                 logger.info(f'[Crawl] 增量过滤后剩余 {len(data)} 条记录')
 
             # 3. 数据转换（可选，通过 source_config.transform 配置）
+            await self.progress.update_progress('transforming', 0, len(data), {'message': '数据转换中'})
             data = self._apply_transform(data)
 
+            # 检查取消信号
+            if await self.progress.is_cancelled():
+                logger.info(f'[Crawl] 任务被取消 task_id={self.task_id}')
+                self.context.error_message = '任务被用户取消'
+                await self.progress.clear_cancel_signal()
+                return self.context
+
             # 4. 批量写入目标
+            await self.progress.update_progress('writing', 0, len(data), {'message': '写入目标存储'})
             written = await self._write_with_retry(data)
 
             # 5. 更新统计
@@ -183,11 +205,25 @@ class CrawlExecutor:
             batch = data[batch_start:batch_start + self.batch_size]
             batch_written = 0
 
+            # 检查取消信号
+            if await self.progress.is_cancelled():
+                logger.info(f'[Crawl] 任务被取消 task_id={self.task_id}，停止写入')
+                self.context.error_message = '任务被用户取消'
+                await self.progress.clear_cancel_signal()
+                break
+
             for attempt in range(1, self.max_retries + 1):
                 try:
                     written = await self.target_writer.write(batch, self.context)
                     batch_written = written
                     total_written += written
+                    # 更新写入进度
+                    await self.progress.update_progress(
+                        'writing',
+                        batch_start + len(batch),
+                        len(data),
+                        {'message': f'已写入 {total_written} 条'},
+                    )
                     break
                 except Exception as e:
                     last_error = e

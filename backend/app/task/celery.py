@@ -48,6 +48,12 @@ def init_celery() -> celery.Celery:
         result_backend = result_backend.replace('postgresql+psycopg', 'mysql+pymysql')
 
     # https://docs.celeryq.dev/en/stable/userguide/configuration.html
+    # 根据配置选择 Beat 调度器
+    if settings.CELERY_BEAT_SCHEDULER_TYPE == 'redbeat':
+        beat_scheduler_cls = 'backend.app.task.utils.redbeat_scheduler:RedBeatScheduler'
+    else:
+        beat_scheduler_cls = 'backend.app.task.utils.schedulers:DatabaseScheduler'
+
     app = celery.Celery(
         'fba_celery',
         broker_url=broker_url,
@@ -58,7 +64,7 @@ def init_celery() -> celery.Celery:
         # result_expires=0,
         # beat_sync_every=1,
         beat_schedule=get_local_beat_schedule(),
-        beat_scheduler='backend.app.task.utils.schedulers:DatabaseScheduler',
+        beat_scheduler=beat_scheduler_cls,
         task_cls='backend.app.task.tasks.base:TaskBase',
         task_track_started=True,
         enable_utc=False,
