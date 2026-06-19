@@ -5,7 +5,6 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 
-from celery.schedules import timedelta as celery_timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.admin.crud.crud_crawl_task import crawl_task_dao, crawl_task_log_dao
