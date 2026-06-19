@@ -104,3 +104,90 @@ values
 (4, 3, 4),
 (5, 4, 5),
 (6, 5, 6);
+
+-- ============================================================
+-- 数据采集任务模块 (sys_crawl_task / sys_crawl_task_log)
+-- 数据质量模块 (sys_quality_rule / sys_quality_check)
+-- 告警模块 (sys_alert_rule / sys_alert_history)
+-- 资源权限模块 (sys_resource_permission / sys_data_masking_rule)
+-- ============================================================
+
+-- 示例数据源
+insert ignore into sys_datasource (id, name, db_type, host, port, database_name, username, password, description, status, created_time, updated_time)
+values (1, '示例MySQL', 'mysql', 'localhost', 3306, 'example_db', 'root', '', '示例MySQL数据源，用于开发和测试', 1, now(), null);
+
+-- 数据管理菜单 (parent_id = null, sort = 7 在 Profile 之后)
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (51, 'page.menu.dataManagement', 'DataManagement', '/data', 7, 'material-symbols:database-outline', 0, null, null, 1, 1, 1, '', null, null, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (52, 'page.menu.crawlTask', 'CrawlTask', '/data/crawl-task', 1, 'tabler:file-database', 1, '/data/crawl-task/index', null, 1, 1, 1, '', null, 51, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (53, '新增', 'AddCrawlTask', null, 0, null, 2, null, 'crawl:task:add', 1, 0, 1, '', null, 52, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (54, '修改', 'EditCrawlTask', null, 0, null, 2, null, 'crawl:task:edit', 1, 0, 1, '', null, 52, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (55, '删除', 'DeleteCrawlTask', null, 0, null, 2, null, 'crawl:task:del', 1, 0, 1, '', null, 52, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (56, 'page.menu.qualityRule', 'QualityRule', '/data/quality-rule', 2, 'material-symbols:rule', 1, '/data/quality-rule/index', null, 1, 1, 1, '', null, 51, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (57, '新增', 'AddQualityRule', null, 0, null, 2, null, 'quality:rule:add', 1, 0, 1, '', null, 56, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (58, '修改', 'EditQualityRule', null, 0, null, 2, null, 'quality:rule:edit', 1, 0, 1, '', null, 56, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (59, '删除', 'DeleteQualityRule', null, 0, null, 2, null, 'quality:rule:del', 1, 0, 1, '', null, 56, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (60, 'page.menu.alertRule', 'AlertRule', '/data/alert-rule', 3, 'ic:outline-alert', 1, '/data/alert-rule/index', null, 1, 1, 1, '', null, 51, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (61, '新增', 'AddAlertRule', null, 0, null, 2, null, 'alert:rule:add', 1, 0, 1, '', null, 60, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (62, '修改', 'EditAlertRule', null, 0, null, 2, null, 'alert:rule:edit', 1, 0, 1, '', null, 60, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (63, '删除', 'DeleteAlertRule', null, 0, null, 2, null, 'alert:rule:del', 1, 0, 1, '', null, 60, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (64, 'page.menu.resourcePermission', 'ResourcePermission', '/data/resource-permission', 4, 'icon-park-outline:permissions', 1, '/data/resource-permission/index', null, 1, 1, 1, '', null, 51, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (65, '新增', 'AddResourcePermission', null, 0, null, 2, null, 'resource:perm:add', 1, 0, 1, '', null, 64, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (66, '修改', 'EditResourcePermission', null, 0, null, 2, null, 'resource:perm:edit', 1, 0, 1, '', null, 64, now(), null);
+insert ignore into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values (67, '删除', 'DeleteResourcePermission', null, 0, null, 2, null, 'resource:perm:del', 1, 0, 1, '', null, 64, now(), null);
+
+-- 分配新菜单给测试角色
+insert ignore into sys_role_menu (id, role_id, menu_id)
+values (5, 1, 51);
+insert ignore into sys_role_menu (id, role_id, menu_id)
+values (6, 1, 52);
+insert ignore into sys_role_menu (id, role_id, menu_id)
+values (7, 1, 56);
+insert ignore into sys_role_menu (id, role_id, menu_id)
+values (8, 1, 60);
+insert ignore into sys_role_menu (id, role_id, menu_id)
+values (9, 1, 64);
+
+-- 示例采集任务
+insert ignore into sys_crawl_task (id, name, description, source_datasource_id, source_config, target_storage, target_config, crawl_mode, incremental_key, incremental_start, schedule_type, concurrency, batch_size, rate_limit, retry_enabled, max_retries, retry_delay, retry_backoff, status, priority, enabled, tags, total_run_count, total_records, created_time, updated_time)
+values (1, 'MySQL用户表全量采集', '从示例MySQL数据源采集演示数据，写入目标数据库的crawl_user表', 1, '{"type":"database","query":"SELECT * FROM sys_user"}', 'database', '{"table":"crawl_user","mode":"truncate_insert","batch_size":500}', 'full', null, null, 'none', 1, 100, 0, true, 3, 60, true, 'stopped', 2, true, '用户数据,开发测试', 0, 0, now(), null);
+insert ignore into sys_crawl_task (id, name, description, source_datasource_id, source_config, target_storage, target_config, crawl_mode, incremental_key, incremental_start, schedule_type, concurrency, batch_size, rate_limit, retry_enabled, max_retries, retry_delay, retry_backoff, status, priority, enabled, tags, total_run_count, total_records, created_time, updated_time)
+values (2, 'API订单数据采集', '从REST API采集订单数据，写入CSV文件（增量模式）', null, '{"type":"api","url":"https://api.example.com/orders","method":"GET","data_path":"data.orders","pagination":{"type":"page","page_param":"page","size_param":"page_size","page_size":100,"max_pages":10}}', 'file_csv', '{"file_path":"/data/orders.csv","encoding":"utf-8-sig","mode":"write"}', 'incremental', 'updated_time', '1970-01-01', 'none', 2, 200, 0, true, 5, 30, true, 'stopped', 1, true, '订单数据,API采集', 0, 0, now(), null);
+
+-- 示例数据质量规则
+insert ignore into sys_quality_rule (id, name, description, rule_type, target_table, target_field, rule_config, severity, enabled, status, created_time, updated_time)
+values (1, '用户名非空检查', '检查sys_user表的username字段是否为空', 'not_null', 'sys_user', 'username', null, 'error', true, 1, now(), null);
+insert ignore into sys_quality_rule (id, name, description, rule_type, target_table, target_field, rule_config, severity, enabled, status, created_time, updated_time)
+values (2, '邮箱格式检查', '检查sys_user表的email字段是否符合邮箱正则', 'regex', 'sys_user', 'email', '{"pattern":"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"}', 'warning', true, 1, now(), null);
+insert ignore into sys_quality_rule (id, name, description, rule_type, target_table, target_field, rule_config, severity, enabled, status, created_time, updated_time)
+values (3, '用户ID范围检查', '检查sys_user表的id字段是否在1~999999范围内', 'range', 'sys_user', 'id', '{"min":1,"max":999999}', 'warning', true, 1, now(), null);
+
+-- 示例告警规则
+insert ignore into sys_alert_rule (id, name, description, metric_type, condition, threshold, duration_seconds, severity, notify_channels, enabled, created_time, updated_time)
+values (1, '数据质量评分过低', '当数据质量评分低于60分时触发告警', 'data_quality', 'lt', 60, 300, 'error', '["email"]', true, now(), null);
+insert ignore into sys_alert_rule (id, name, description, metric_type, condition, threshold, duration_seconds, severity, notify_channels, enabled, created_time, updated_time)
+values (2, '采集任务成功率告警', '当采集任务成功率低于90%时触发告警', 'task_success', 'lt', 90, 600, 'warning', '["email","webhook"]', true, now(), null);
+insert ignore into sys_alert_rule (id, name, description, metric_type, condition, threshold, duration_seconds, severity, notify_channels, enabled, created_time, updated_time)
+values (3, '采集任务延迟告警', '当采集任务执行时间超过300秒时触发告警', 'task_delay', 'gt', 300, 60, 'warning', '["email"]', true, now(), null);
+
+-- 示例资源权限
+insert ignore into sys_resource_permission (id, name, resource_type, resource_id, resource_name, permission_type, role_id, description, enabled, created_time, updated_time)
+values (1, 'MySQL数据源读取权限', 'datasource', 1, '示例MySQL', 'read', 1, '允许测试角色读取示例MySQL数据源', true, now(), null);
+insert ignore into sys_resource_permission (id, name, resource_type, resource_id, resource_name, permission_type, role_id, description, enabled, created_time, updated_time)
+values (2, '用户表管理权限', 'table', null, 'sys_user', 'admin', 1, '允许测试角色管理sys_user表', true, now(), null);

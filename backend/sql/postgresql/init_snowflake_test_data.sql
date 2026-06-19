@@ -99,3 +99,69 @@ values
 (2048601270192832513, 2048601269869871105, 2048601269999894530),
 (2048601270192832514, 2048601269869871106, 2048601269999894531),
 (2048601270192832515, 2048601269869871107, 2048601269999894533);
+
+-- ============================================================
+-- 数据采集任务 / 数据质量 / 告警 / 资源权限 模块初始化数据
+-- ============================================================
+
+-- 示例数据源
+insert into sys_datasource (id, name, db_type, host, port, database_name, username, password, description, status, created_time, updated_time)
+values (3048601260000000001, '示例MySQL', 'mysql', 'localhost', 3306, 'example_db', 'root', '', '示例MySQL数据源，用于开发和测试', 1, now(), null);
+
+-- 数据管理菜单
+insert into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+values
+(3048601260000000051, 'page.menu.dataManagement', 'DataManagement', '/data', 7, 'material-symbols:database-outline', 0, null, null, 1, 1, 1, '', null, null, now(), null),
+(3048601260000000052, 'page.menu.crawlTask', 'CrawlTask', '/data/crawl-task', 1, 'tabler:file-database', 1, '/data/crawl-task/index', null, 1, 1, 1, '', null, 3048601260000000051, now(), null),
+(3048601260000000053, '新增', 'AddCrawlTask', null, 0, null, 2, null, 'crawl:task:add', 1, 0, 1, '', null, 3048601260000000052, now(), null),
+(3048601260000000054, '修改', 'EditCrawlTask', null, 0, null, 2, null, 'crawl:task:edit', 1, 0, 1, '', null, 3048601260000000052, now(), null),
+(3048601260000000055, '删除', 'DeleteCrawlTask', null, 0, null, 2, null, 'crawl:task:del', 1, 0, 1, '', null, 3048601260000000052, now(), null),
+(3048601260000000056, 'page.menu.qualityRule', 'QualityRule', '/data/quality-rule', 2, 'material-symbols:rule', 1, '/data/quality-rule/index', null, 1, 1, 1, '', null, 3048601260000000051, now(), null),
+(3048601260000000057, '新增', 'AddQualityRule', null, 0, null, 2, null, 'quality:rule:add', 1, 0, 1, '', null, 3048601260000000056, now(), null),
+(3048601260000000058, '修改', 'EditQualityRule', null, 0, null, 2, null, 'quality:rule:edit', 1, 0, 1, '', null, 3048601260000000056, now(), null),
+(3048601260000000059, '删除', 'DeleteQualityRule', null, 0, null, 2, null, 'quality:rule:del', 1, 0, 1, '', null, 3048601260000000056, now(), null),
+(3048601260000000060, 'page.menu.alertRule', 'AlertRule', '/data/alert-rule', 3, 'ic:outline-alert', 1, '/data/alert-rule/index', null, 1, 1, 1, '', null, 3048601260000000051, now(), null),
+(3048601260000000061, '新增', 'AddAlertRule', null, 0, null, 2, null, 'alert:rule:add', 1, 0, 1, '', null, 3048601260000000060, now(), null),
+(3048601260000000062, '修改', 'EditAlertRule', null, 0, null, 2, null, 'alert:rule:edit', 1, 0, 1, '', null, 3048601260000000060, now(), null),
+(3048601260000000063, '删除', 'DeleteAlertRule', null, 0, null, 2, null, 'alert:rule:del', 1, 0, 1, '', null, 3048601260000000060, now(), null),
+(3048601260000000064, 'page.menu.resourcePermission', 'ResourcePermission', '/data/resource-permission', 4, 'icon-park-outline:permissions', 1, '/data/resource-permission/index', null, 1, 1, 1, '', null, 3048601260000000051, now(), null),
+(3048601260000000065, '新增', 'AddResourcePermission', null, 0, null, 2, null, 'resource:perm:add', 1, 0, 1, '', null, 3048601260000000064, now(), null),
+(3048601260000000066, '修改', 'EditResourcePermission', null, 0, null, 2, null, 'resource:perm:edit', 1, 0, 1, '', null, 3048601260000000064, now(), null),
+(3048601260000000067, '删除', 'DeleteResourcePermission', null, 0, null, 2, null, 'resource:perm:del', 1, 0, 1, '', null, 3048601260000000064, now(), null);
+
+-- 分配新菜单给测试角色
+insert into sys_role_menu (id, role_id, menu_id)
+values
+(3048601260000001005, 2048601269345583104, 3048601260000000051),
+(3048601260000001006, 2048601269345583104, 3048601260000000052),
+(3048601260000001007, 2048601269345583104, 3048601260000000056),
+(3048601260000001008, 2048601269345583104, 3048601260000000060),
+(3048601260000001009, 2048601269345583104, 3048601260000000064);
+
+-- 示例采集任务
+insert into sys_crawl_task (id, name, description, source_datasource_id, source_config, target_storage, target_config, crawl_mode, incremental_key, incremental_start, schedule_type, concurrency, batch_size, rate_limit, retry_enabled, max_retries, retry_delay, retry_backoff, status, priority, enabled, tags, total_run_count, total_records, created_time, updated_time)
+values (3048601260000002001, 'MySQL用户表全量采集', '从示例MySQL数据源采集演示数据，写入crawl_user表', 3048601260000000001, '{"type":"database","query":"SELECT * FROM sys_user"}', 'database', '{"table":"crawl_user","mode":"truncate_insert","batch_size":500}', 'full', null, null, 'none', 1, 100, 0, true, 3, 60, true, 'stopped', 2, true, '用户数据,开发测试', 0, 0, now(), null)
+on conflict (id) do nothing;
+insert into sys_crawl_task (id, name, description, source_datasource_id, source_config, target_storage, target_config, crawl_mode, incremental_key, incremental_start, schedule_type, concurrency, batch_size, rate_limit, retry_enabled, max_retries, retry_delay, retry_backoff, status, priority, enabled, tags, total_run_count, total_records, created_time, updated_time)
+values (3048601260000002002, 'API订单数据采集', '从REST API采集订单数据，写入CSV文件', null, '{"type":"api","url":"https://api.example.com/orders","method":"GET","data_path":"data.orders","pagination":{"type":"page","page_param":"page","size_param":"page_size","page_size":100,"max_pages":10}}', 'file_csv', '{"file_path":"/data/orders.csv","encoding":"utf-8-sig","mode":"write"}', 'incremental', 'updated_time', '1970-01-01', 'none', 2, 200, 0, true, 5, 30, true, 'stopped', 1, true, '订单数据,API采集', 0, 0, now(), null)
+on conflict (id) do nothing;
+
+-- 示例数据质量规则
+insert into sys_quality_rule (id, name, description, rule_type, target_table, target_field, rule_config, severity, enabled, status, created_time, updated_time)
+values
+(3048601260000003001, '用户名非空检查', '检查sys_user表的username字段是否为空', 'not_null', 'sys_user', 'username', null, 'error', true, 1, now(), null),
+(3048601260000003002, '邮箱格式检查', '检查sys_user表的email字段是否符合邮箱正则', 'regex', 'sys_user', 'email', '{"pattern":"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"}', 'warning', true, 1, now(), null),
+(3048601260000003003, '用户ID范围检查', '检查sys_user表的id字段是否在1~999999范围内', 'range', 'sys_user', 'id', '{"min":1,"max":999999}', 'warning', true, 1, now(), null);
+
+-- 示例告警规则
+insert into sys_alert_rule (id, name, description, metric_type, condition, threshold, duration_seconds, severity, notify_channels, enabled, created_time, updated_time)
+values
+(3048601260000004001, '数据质量评分过低', '当数据质量评分低于60分时触发告警', 'data_quality', 'lt', 60, 300, 'error', '["email"]', true, now(), null),
+(3048601260000004002, '采集任务成功率告警', '当采集任务成功率低于90%时触发告警', 'task_success', 'lt', 90, 600, 'warning', '["email","webhook"]', true, now(), null),
+(3048601260000004003, '采集任务延迟告警', '当采集任务执行时间超过300秒时触发告警', 'task_delay', 'gt', 300, 60, 'warning', '["email"]', true, now(), null);
+
+-- 示例资源权限
+insert into sys_resource_permission (id, name, resource_type, resource_id, resource_name, permission_type, role_id, description, enabled, created_time, updated_time)
+values
+(3048601260000005001, 'MySQL数据源读取权限', 'datasource', 3048601260000000001, '示例MySQL', 'read', 2048601269345583104, '允许测试角色读取示例MySQL数据源', true, now(), null),
+(3048601260000005002, '用户表管理权限', 'table', null, 'sys_user', 'admin', 2048601269345583104, '允许测试角色管理sys_user表', true, now(), null);
