@@ -1,12 +1,24 @@
 """目标存储写入器
 
 支持写入目标：
-- database: 写入关系型数据库
+- database: 写入关系型数据库（需通过数据源配置连接）
+- local_database: 写入当前项目自身数据库（无需额外配置）
 - file_csv: 写入 CSV 文件
 - file_json: 写入 JSON 文件
 - file_excel: 写入 Excel 文件
 - mongodb: 写入 MongoDB
 """
+
+from __future__ import annotations
+
+import csv
+import json
+from typing import Any
+
+from loguru import logger
+
+from backend.app.admin.service.crawl.context import CrawlContext
+from backend.app.admin.service.crawl.exceptions import CrawlConnectionError, CrawlTargetError
 
 from __future__ import annotations
 
@@ -363,10 +375,81 @@ class MongoDBTargetWriter(BaseTargetWriter):
             client.close()
 
 
+class LocalDatabaseTargetWriter(BaseTargetWriter):
+    """本地数据库目标写入器
+
+    直接写入当前项目自身的数据库，无需额外数据源配置。
+
+    配置参数:
+        table: 目标表名
+        mode: 写入模式 (insert/upsert/truncate_insert)
+        batch_size: 批量写入大小 (默认 1000)
+        on_conflict: 冲突处理字段 (upsert 模式必填)
+    """
+
+    target_type = 'local_database'
+
+    async def write(self, data: list[dict[str, Any]], context: CrawlContext) -> int:
+        if not data:
+            return 0
+
+        table = self.config.get('table', '')
+        mode = self.config.get('mode', 'insert')
+        batch_size = self.config.get('batch_size', 1000)
+        on_conflict = self.config.get('on_conflict', None)
+
+        if not table:
+            raise CrawlTargetError('目标表名不能为空', self.target_type)
+
+        from sqlalchemy import text
+        from backend.database.db import async_db_session
+
+        async with async_db_session() as session:
+            written = await self._write_to_local(session, table, data, mode, batch_size, on_conflict)
+
+        context.metrics['target_type'] = 'local_database'
+        context.metrics['target_table'] = table
+        return written
+
+    async def _write_to_local(
+        self,
+        session,
+        table: str,
+        data: list[dict[str, Any]],
+        mode: str,
+        batch_size: int,
+        on_conflict: str | None,
+    ) -> int:
+        """写入本地数据库"""
+        if mode == 'truncate_insert':
+            await session.execute(text(f'TRUNCATE TABLE {table}'))
+
+        if not data:
+            await session.commit()
+            return 0
+
+        columns = list(data[0].keys())
+        col_names = ', '.join(columns)
+        placeholders = ', '.join([f':{c}' for c in columns])
+
+        total = 0
+        for i in range(0, len(data), batch_size):
+            batch = data[i:i + batch_size]
+            stmt = text(f'INSERT INTO {table} ({col_names}) VALUES ({placeholders})')
+            for row in batch:
+                row_data = {c: row.get(c) for c in columns}
+                await session.execute(stmt, row_data)
+                total += 1
+
+        await session.commit()
+        return total
+
+
 # ── 写入器注册表 ──────────────────────────────────────────
 
 _TARGET_WRITERS: dict[str, type[BaseTargetWriter]] = {
     'database': DatabaseTargetWriter,
+    'local_database': LocalDatabaseTargetWriter,
     'file_csv': FileCSVTargetWriter,
     'file_json': FileJSONTargetWriter,
     'file_excel': FileExcelTargetWriter,
