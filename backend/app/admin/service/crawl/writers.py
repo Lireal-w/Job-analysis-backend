@@ -17,6 +17,8 @@ from typing import Any
 
 from loguru import logger
 
+from sqlalchemy import text
+
 from backend.app.admin.service.crawl.context import CrawlContext
 from backend.app.admin.service.crawl.exceptions import CrawlConnectionError, CrawlTargetError
 
@@ -390,7 +392,6 @@ class LocalDatabaseTargetWriter(BaseTargetWriter):
         if not table:
             raise CrawlTargetError('目标表名不能为空', self.target_type)
 
-        from sqlalchemy import text
         from backend.database.db import async_db_session
 
         async with async_db_session() as session:
