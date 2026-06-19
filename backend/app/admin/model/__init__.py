@@ -31,3 +31,7 @@ from backend.app.admin.model.audit_log import AuditLog as AuditLog
 from backend.app.admin.model.data_permission import DataMaskingRule as DataMaskingRule
 from backend.app.admin.model.data_permission import ResourcePermission as ResourcePermission
 from backend.app.admin.model.worker import WorkerNode as WorkerNode
+
+# AI 助手模型 (在 sys_ 前缀表中存储)
+from backend.app.assistant.model import AiConfig as AiConfig
+from backend.app.assistant.model import AiChatHistory as AiChatHistory

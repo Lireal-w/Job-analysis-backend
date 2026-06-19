@@ -218,6 +218,9 @@ def register_socket_app(app: FastAPI) -> None:
     :param app: FastAPI 应用实例
     :return:
     """
+    # 导入 AI 助手 WebSocket 处理器，注册 /ws/assistant 命名空间
+    import backend.app.assistant.socketio  # noqa: F401
+
     from backend.common.socketio.server import sio
 
     socket_app = socketio.ASGIApp(
