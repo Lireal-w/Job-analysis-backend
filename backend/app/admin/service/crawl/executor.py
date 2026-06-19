@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import asyncio
 import traceback
-from datetime import datetime
 from typing import Any
 
 from loguru import logger
@@ -25,6 +24,7 @@ from backend.app.admin.service.crawl.exceptions import CrawlError
 from backend.app.admin.service.crawl.progress import CrawlProgressTracker
 from backend.app.admin.service.crawl.readers import BaseSourceReader, get_source_reader
 from backend.app.admin.service.crawl.writers import BaseTargetWriter, get_target_writer
+from backend.utils.timezone import timezone
 
 
 class CrawlExecutor:
@@ -93,7 +93,7 @@ class CrawlExecutor:
         Returns:
             采集执行上下文 (包含统计信息)
         """
-        self.context.start_time = datetime.now()
+        self.context.start_time = timezone.now()
         logger.info(
             f'[Crawl] 开始执行采集任务 task_id={self.task_id}, '
             f'run_id={self.run_id}, mode={self.crawl_mode}'
@@ -159,7 +159,6 @@ class CrawlExecutor:
             raise
 
         finally:
-            from backend.utils.timezone import timezone
             self.context.end_time = timezone.now()
 
         return self.context

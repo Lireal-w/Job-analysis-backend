@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from backend.utils.timezone import timezone
+
 
 @dataclass
 class CrawlContext:
@@ -21,7 +23,7 @@ class CrawlContext:
     run_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     """运行批次 ID"""
 
-    start_time: datetime = field(default_factory=datetime.now)
+    start_time: datetime = field(default_factory=timezone.now)
     """开始时间"""
 
     end_time: datetime | None = None

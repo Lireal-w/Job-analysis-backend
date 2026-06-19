@@ -178,16 +178,6 @@ class APISourceReader(BaseSourceReader):
         else:
             all_rows = await self._read_single(url, method, headers, cookies, params, body, content_type, data_path)
 
-        if not url:
-            raise CrawlSourceError('API URL 不能为空', self.source_type)
-
-        all_rows: list[dict[str, Any]] = []
-
-        if pagination:
-            all_rows = await self._read_paginated(url, method, headers, params, body, data_path, pagination)
-        else:
-            all_rows = await self._read_single(url, method, headers, params, body, data_path)
-
         context.metrics['source_type'] = 'api'
         context.metrics['source_url'] = url
         return all_rows
