@@ -277,23 +277,16 @@ class CrawlTaskService:
 
     @staticmethod
     def _register_schedule(task: CrawlTask) -> None:
-        """注册到 Celery Beat 调度"""
-        schedule_name = f'crawl_task_{task.id}'
+        """注册到 Celery Beat 调度
 
-        if task.schedule_type == 'cron':
-            celery_app.conf.beat_schedule[schedule_name] = {
-                'task': 'crawl_task_scheduled',
-                'schedule': task.cron_expr,
-                'args': [task.id],
-                'kwargs': {},
-            }
-        elif task.schedule_type == 'interval' and task.interval_seconds:
-            celery_app.conf.beat_schedule[schedule_name] = {
-                'task': 'crawl_task_scheduled',
-                'schedule': celery_timedelta(seconds=task.interval_seconds),
-                'args': [task.id],
-                'kwargs': {},
-            }
+        注意：项目使用 DatabaseScheduler，调度条目需写入 task_scheduler 表。
+        创建调度条目需通过任务调度模块的 API 完成（需要异步 DB session）。
+        此方法仅保留兼容标记，实际注册流程：
+        1. 创建/更新采集任务时 → 标记需要注册调度
+        2. 通过 POST /api/v1/task-scheduler 创建调度条目
+           task='crawl_task_scheduled', args=[task.id]
+        """
+        pass
 
     @staticmethod
     async def get_dashboard_stats(*, db: AsyncSession) -> dict[str, Any]:
