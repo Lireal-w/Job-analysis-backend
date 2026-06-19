@@ -20,17 +20,6 @@ from loguru import logger
 from backend.app.admin.service.crawl.context import CrawlContext
 from backend.app.admin.service.crawl.exceptions import CrawlConnectionError, CrawlTargetError
 
-from __future__ import annotations
-
-import csv
-import json
-from typing import Any
-
-from loguru import logger
-
-from backend.app.admin.service.crawl.context import CrawlContext
-from backend.app.admin.service.crawl.exceptions import CrawlConnectionError, CrawlTargetError
-
 
 class BaseTargetWriter:
     """目标存储写入器基类"""
