@@ -48,7 +48,7 @@ async def main():
                 },
                 'data_path': '',
             },
-            target_storage='database',
+            target_storage='local_database',
             target_datasource_id=None,
             target_config={
                 'table': 'crawl_elec_record',
