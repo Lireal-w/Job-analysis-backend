@@ -1,5 +1,6 @@
 from backend.app.admin.model.crawl_task import CrawlTask as CrawlTask
 from backend.app.admin.model.crawl_task import CrawlTaskLog as CrawlTaskLog
+from backend.app.admin.model.crawl_elec import CrawlElecRecord as CrawlElecRecord
 from backend.app.admin.model.data_flow import DataFlow as DataFlow
 from backend.app.admin.model.data_flow import DataFlowRun as DataFlowRun
 from backend.app.admin.model.data_quality import QualityCheck as QualityCheck

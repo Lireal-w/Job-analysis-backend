@@ -7,6 +7,10 @@
 - file_excel: 读取 Excel 文件
 - file_json: 读取 JSON 文件
 - mongodb: 从 MongoDB 读取数据
+- mihoyo_post: 米游社帖子采集 (爬虫插件)
+
+爬虫插件位于 `crawlers/` 目录，基于 Scrapling 引擎开发。
+新增爬虫后在 `_SOURCE_READERS` 中注册即可在 UI 中使用。
 """
 
 from __future__ import annotations
@@ -128,8 +132,10 @@ class APISourceReader(BaseSourceReader):
         url: API URL
         method: HTTP 方法 (GET/POST, 默认 GET)
         headers: 请求头 (可选)
+        cookies: Cookie 字符串 (可选, 如 'key1=val1; key2=val2')
         params: 查询参数 (可选)
-        body: 请求体 (可选)
+        body: 请求体 (可选，json 模式传 dict，form 模式传 dict 自动编码)
+        content_type: 请求体类型 (json 或 form, 默认 json)
         data_path: 数据路径 (可选, 如 'data.items')
         pagination: 分页配置 (可选)
             - type: 分页类型 (offset/cursor/page)
@@ -147,10 +153,30 @@ class APISourceReader(BaseSourceReader):
         url = self.config.get('url', '')
         method = self.config.get('method', 'GET').upper()
         headers = self.config.get('headers', {})
+        raw_cookies = self.config.get('cookies', None)
         params = self.config.get('params', {})
         body = self.config.get('body', None)
+        content_type = self.config.get('content_type', 'json')
         data_path = self.config.get('data_path', None)
         pagination = self.config.get('pagination', None)
+
+        # 解析 Cookie 字符串
+        cookies = None
+        if raw_cookies:
+            from http.cookies import SimpleCookie
+            c = SimpleCookie()
+            c.load(raw_cookies)
+            cookies = {k: v.value for k, v in c.items()}
+
+        if not url:
+            raise CrawlSourceError('API URL 不能为空', self.source_type)
+
+        all_rows: list[dict[str, Any]] = []
+
+        if pagination:
+            all_rows = await self._read_paginated(url, method, headers, cookies, params, body, content_type, data_path, pagination)
+        else:
+            all_rows = await self._read_single(url, method, headers, cookies, params, body, content_type, data_path)
 
         if not url:
             raise CrawlSourceError('API URL 不能为空', self.source_type)
@@ -171,13 +197,22 @@ class APISourceReader(BaseSourceReader):
         url: str,
         method: str,
         headers: dict,
+        cookies: dict | None,
         params: dict,
         body: dict | None,
+        content_type: str,
         data_path: str | None,
     ) -> list[dict[str, Any]]:
         """读取单页数据"""
+        request_kwargs = {'headers': headers, 'cookies': cookies, 'params': params}
+        if body is not None:
+            if content_type == 'form':
+                request_kwargs['data'] = body
+            else:
+                request_kwargs['json'] = body
+
         async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.request(method, url, headers=headers, params=params, json=body)
+            response = await client.request(method, url, **request_kwargs)
             response.raise_for_status()
             data = response.json()
 
@@ -188,8 +223,10 @@ class APISourceReader(BaseSourceReader):
         url: str,
         method: str,
         headers: dict,
+        cookies: dict | None,
         params: dict,
         body: dict | None,
+        content_type: str,
         data_path: str | None,
         pagination: dict,
     ) -> list[dict[str, Any]]:
@@ -221,9 +258,14 @@ class APISourceReader(BaseSourceReader):
                 elif page_type == 'cursor' and cursor:
                     request_params[cursor_path] = cursor
 
-                response = await client.request(
-                    method, url, headers=headers, params=request_params, json=request_body or None
-                )
+                request_kwargs = {'headers': headers, 'cookies': cookies, 'params': request_params}
+                if request_body:
+                    if content_type == 'form':
+                        request_kwargs['data'] = request_body
+                    else:
+                        request_kwargs['json'] = request_body
+
+                response = await client.request(method, url, **request_kwargs)
                 response.raise_for_status()
                 data = response.json()
 
@@ -488,19 +530,29 @@ class MongoDBSourceReader(BaseSourceReader):
 
 # ── 读取器注册表 ──────────────────────────────────────────
 
-_SOURCE_READERS: dict[str, type[BaseSourceReader]] = {
-    'database': DatabaseSourceReader,
-    'api': APISourceReader,
-    'file_csv': FileCSVSourceReader,
-    'file_excel': FileExcelSourceReader,
-    'file_json': FileJSONSourceReader,
-    'mongodb': MongoDBSourceReader,
-}
+def _get_source_readers() -> dict[str, type[BaseSourceReader]]:
+    """获取读取器注册表（惰性加载，避免循环导入）"""
+    from backend.app.admin.service.crawl.crawlers.mihoyo import MiHoYoPostCrawler
+
+    return {
+        'database': DatabaseSourceReader,
+        'api': APISourceReader,
+        'file_csv': FileCSVSourceReader,
+        'file_excel': FileExcelSourceReader,
+        'file_json': FileJSONSourceReader,
+        'mongodb': MongoDBSourceReader,
+        # ── 爬虫插件 ──
+        'mihoyo_post': MiHoYoPostCrawler,
+        # 后续扩展：
+        # 'bilibili_video': BiliBiliVideoCrawler,
+        # 'weibo_timeline': WeiboTimelineCrawler,
+    }
 
 
 def get_source_reader(source_type: str, config: dict[str, Any]) -> BaseSourceReader:
     """获取数据源读取器实例"""
-    reader_cls = _SOURCE_READERS.get(source_type)
+    readers = _get_source_readers()
+    reader_cls = readers.get(source_type)
     if reader_cls is None:
-        raise CrawlSourceError(f'不支持的数据源类型: {source_type}')
+        raise CrawlSourceError(f'不支持的源类型: {source_type}')
     return reader_cls(config)
