@@ -79,7 +79,10 @@ class CRUDCrawlTaskLog(CRUDPlus[CrawlTaskLog]):
         return await self.select_model_by_column(db, run_id=run_id)
 
     async def create_log(self, db: AsyncSession, data: dict) -> CrawlTaskLog:
-        return await self.create_model(db, data, flush=True)
+        obj = CrawlTaskLog(**data)
+        db.add(obj)
+        await db.flush()
+        return obj
 
     async def update_log(self, db: AsyncSession, pk: int, data: dict) -> int:
         return await self.update_model(db, pk, data)
