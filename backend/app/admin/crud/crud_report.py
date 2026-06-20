@@ -38,7 +38,7 @@ class CRUDReport(CRUDPlus[Report]):
         return await self.select_order('id', **filters)
 
     async def create(self, db: AsyncSession, obj: CreateReportParam) -> Report:
-        return await self.create_model(db, obj)
+        return await self.create_model(db, obj, flush=True)
 
     async def update(self, db: AsyncSession, pk: int, obj: UpdateReportParam) -> int:
         return await self.update_model(db, pk, obj)
@@ -57,7 +57,7 @@ class CRUDReportWidget(CRUDPlus[ReportWidget]):
         return await self.select_models_by_column(db, report_id=report_id, order_by='sort')
 
     async def create(self, db: AsyncSession, obj: CreateReportWidgetParam) -> ReportWidget:
-        return await self.create_model(db, obj)
+        return await self.create_model(db, obj, flush=True)
 
     async def update(self, db: AsyncSession, pk: int, obj: UpdateReportWidgetParam) -> int:
         return await self.update_model(db, pk, obj)
