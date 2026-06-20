@@ -54,7 +54,10 @@ class CRUDReportWidget(CRUDPlus[ReportWidget]):
         return await self.select_model(db, pk)
 
     async def get_by_report(self, db: AsyncSession, report_id: int) -> Sequence[ReportWidget]:
-        return await self.select_models_by_column(db, report_id=report_id, order_by='sort')
+        from sqlalchemy import select as sa_select
+        stmt = sa_select(ReportWidget).where(ReportWidget.report_id == report_id).order_by(ReportWidget.sort)
+        result = await db.execute(stmt)
+        return result.scalars().all()
 
     async def create(self, db: AsyncSession, obj: CreateReportWidgetParam) -> ReportWidget:
         return await self.create_model(db, obj, flush=True)

@@ -15,7 +15,14 @@ class CRUDQueryHistory(CRUDPlus[QueryHistory]):
         return await self.select_model(db, pk)
 
     async def get_by_user(self, db: AsyncSession, user_id: int) -> Sequence[QueryHistory]:
-        return await self.select_models_by_column(db, created_by=user_id, order_by='-created_time')
+        from sqlalchemy import select as sa_select
+        stmt = (
+            sa_select(QueryHistory)
+            .where(QueryHistory.created_by == user_id)
+            .order_by(QueryHistory.created_time.desc())
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
 
     async def create_history(self, db: AsyncSession, obj: dict) -> None:
         await self.create_model(db, obj)

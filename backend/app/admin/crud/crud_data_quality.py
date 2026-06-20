@@ -55,7 +55,10 @@ class CRUDQualityCheck(CRUDPlus[QualityCheck]):
         return await self.select_model(db, pk)
 
     async def get_by_rule(self, db: AsyncSession, rule_id: int) -> Sequence[QualityCheck]:
-        return await self.select_models_by_column(db, rule_id=rule_id)
+        from sqlalchemy import select as sa_select
+        stmt = sa_select(QualityCheck).where(QualityCheck.rule_id == rule_id).order_by(QualityCheck.id.desc())
+        result = await db.execute(stmt)
+        return result.scalars().all()
 
     async def get_by_run_id(self, db: AsyncSession, run_id: str) -> QualityCheck | None:
         return await self.select_model_by_column(db, run_id=run_id)
