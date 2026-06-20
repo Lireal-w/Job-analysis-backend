@@ -43,7 +43,8 @@ class ReportService:
         existing = await report_dao.get_by_name(db, obj.name)
         if existing:
             raise errors.ConflictError(msg='报表名称已存在')
-        return await report_dao.create(db, obj)
+        report = await report_dao.create(db, obj)
+        return await report_dao.get(db, report.id)
 
     @staticmethod
     async def update(*, db: AsyncSession, pk: int, obj: UpdateReportParam) -> int:
@@ -71,7 +72,8 @@ class ReportService:
         report = await report_dao.get(db, obj.report_id)
         if not report:
             raise errors.NotFoundError(msg='报表不存在')
-        return await report_widget_dao.create(db, obj)
+        widget = await report_widget_dao.create(db, obj)
+        return await report_widget_dao.get(db, widget.id)
 
     @staticmethod
     async def update_widget(*, db: AsyncSession, widget_id: int, obj: UpdateReportWidgetParam) -> int:
