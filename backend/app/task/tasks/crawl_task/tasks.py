@@ -289,24 +289,30 @@ async def _update_task_stats(
     """更新任务统计信息"""
     try:
         async with async_db_session() as session:
+            task = await crawl_task_dao.get(session, task_id)
+            if not task:
+                logger.warning(f'[Crawl] 更新统计失败: 任务 {task_id} 不存在')
+                return
+
             stats: dict[str, Any] = {}
 
             if status is not None:
                 stats['status'] = status
 
+            # 成功或失败完成时更新统计（status=RUNNING 的中间状态不更新）
+            if status in (CrawlStatus.STOPPED.value, CrawlStatus.ERROR.value):
+                stats['total_run_count'] = (task.total_run_count or 0) + 1
+
             if total_records is not None:
                 # 累加总记录数
-                task = await crawl_task_dao.get(session, task_id)
-                if task:
-                    stats['total_records'] = (task.total_records or 0) + total_records
-                    stats['total_run_count'] = (task.total_run_count or 0) + 1
-                    stats['last_run_time'] = timezone.now()
-                    stats['last_duration'] = duration
-                    stats['last_status'] = last_status
+                stats['total_records'] = (task.total_records or 0) + total_records
+                stats['last_run_time'] = timezone.now()
+                stats['last_duration'] = duration
+                stats['last_status'] = last_status
 
-                    # 更新增量起始值（增量模式）
-                    if incremental_end:
-                        stats['incremental_start'] = incremental_end
+                # 更新增量起始值（增量模式）
+                if incremental_end:
+                    stats['incremental_start'] = incremental_end
 
             if stats:
                 await crawl_task_dao.update_stats(session, task_id, stats)
