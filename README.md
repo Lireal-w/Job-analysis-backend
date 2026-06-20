@@ -10,7 +10,9 @@
 
 **核心能力**：
 - ⚡ **高性能 API**：基于 FastAPI 异步框架，支持高并发请求处理
-- 🔄 **分布式爬虫集群**：主从架构，支持多节点爬虫任务分发与调度
+- �️ **弹性数据采集引擎**：内置通用采集引擎，支持多种数据源读取与目标存储写入，插件化爬虫体系
+- 🤖 **AI 智能助手**：WebSocket 实时对话，支持多模型切换，AI 可创建/管理采集任务
+- �🔄 **分布式爬虫集群**：主从架构，支持多节点爬虫任务分发与调度
 - 🗄️ **多层次存储**：PostgreSQL/MySQL 持久化存储 + Redis 缓存加速
 - 🔐 **安全认证**：JWT + RBAC 权限控制体系
 - 📊 **远程服务器管理**：支持 SSH / SFTP / Telnet / RDP / VNC / HTTP / HTTPS 多协议连接测试
@@ -33,7 +35,7 @@
 | **Redis** | 消息代理 + 缓存 |
 | **PostgreSQL / MySQL** | 关系型数据库 |
 | **MongoDB** | NoSQL 文档数据库 |
-| **Paramiko** | SSH/SFTP 远程连接 |
+| **Scrapling** | 爬虫引擎（TLS 指纹伪装、异步请求、HTML 解析） |
 | **Socket.IO** | WebSocket 实时通信 |
 | **Casbin** | RBAC 权限管理 |
 | **Pydantic** | 数据验证与序列化 |
@@ -54,13 +56,29 @@ fastapi-best-architecture/
 │   │   │   ├── model/              # SQLAlchemy ORM 模型层
 │   │   │   ├── schema/             # Pydantic 数据验证层
 │   │   │   ├── service/            # 业务逻辑层
-│   │   │   │   ├── crawl/          # 爬虫服务（执行器/进度追踪/读取器/写入器）
+│   │   │   │   ├── crawl/          # 🔄 数据采集引擎
+│   │   │   │   │   ├── executor.py    # 采集执行器（读取→过滤→转换→写入）
+│   │   │   │   │   ├── readers.py     # 数据源读取器（database/api/file/mongodb）
+│   │   │   │   │   ├── writers.py     # 目标写入器（database/local/file/mongodb）
+│   │   │   │   │   ├── context.py     # 执行上下文
+│   │   │   │   │   ├── progress.py    # 实时进度追踪（Redis + SocketIO）
+│   │   │   │   │   └── crawlers/      # 🕷️ 插件化爬虫目录
+│   │   │   │   │       ├── base.py        # 爬虫基类（Scrapling 封装）
+│   │   │   │   │       └── mihoyo/        # 米游社帖子采集器（示例爬虫）
 │   │   │   │   ├── data_quality/   # 数据质量规则引擎
 │   │   │   │   ├── alert/          # 告警评估与分发
 │   │   │   │   ├── datasource/     # 数据源连接池管理
 │   │   │   │   ├── etl/            # ETL 管道引擎（DAG/节点/上下文）
 │   │   │   │   └── query/          # 查询引擎
 │   │   │   └── tests/              # 测试用例
+│   │   ├── assistant/              # 🤖 AI 助手模块（新增）
+│   │   │   ├── api/v1/             # AI 配置管理 API
+│   │   │   ├── schema/             # AI 配置/聊天 Schema
+│   │   │   ├── service/            # AI 对话服务（OpenAI 兼容）
+│   │   │   ├── tools/              # AI 工具调用框架（创建任务等）
+│   │   │   ├── socketio.py         # WebSocket 对话处理器
+│   │   │   ├── model.py            # AI 配置模型
+│   │   │   └── crud.py             # AI 配置 CRUD
 │   │   ├── todo/                   # 待办事项模块（独立子应用）
 │   │   │   ├── api/v1/             # 待办 API
 │   │   │   ├── crud/               # 待办 CRUD
@@ -204,10 +222,24 @@ alembic upgrade head
 fba run
 
 # 启动 Celery Worker（新终端）
-celery -A backend.app.task.celery:celery_app worker --loglevel=info --pool=solo
+fba celery-worker -l info
+# 或
+celery -A backend.app.task.celery:celery_app worker --loglevel=info --pool=gevent
 
-# （可选）启动 Celery Beat 定时调度
+# 启动 Celery Beat 定时调度（新终端，使用项目 DatabaseScheduler）
+fba celery-beat -l info
+# 或
 celery -A backend.app.task.celery:celery_app beat --loglevel=info
+```
+
+### 6. 初始化数据（可选）
+
+```bash
+# 初始化核心业务数据（数据源、菜单、示例任务等）
+python backend/scripts/init_data.py
+
+# 为采集任务注册 Celery Beat 调度
+python backend/scripts/register_crawl_beat.py
 ```
 
 ### 6. Docker Compose 一键启动（推荐）
@@ -276,6 +308,10 @@ Worker 启动后自动：
 | | GET | `/api/v1/sys/query/schema/{datasource_id}` | 获取数据源表结构 |
 | **采集进度** | GET | `/api/v1/sys/crawl-tasks/{pk}/progress` | 实时采集进度 |
 | | PUT | `/api/v1/sys/crawl-tasks/{pk}/stop` | 取消采集任务 |
+| **AI 助手** | POST | `/api/v1/ai-config` | 创建 AI 模型配置 |
+| | GET | `/api/v1/ai-config/active` | 获取当前激活的 AI 配置 |
+| | PUT | `/api/v1/ai-config/{pk}/activate` | 激活 AI 配置 |
+| | WS | `/ws/assistant` | AI 助手 WebSocket 实时对话 |
 | **职位管理** | GET/POST/PUT | `/api/v1/jobs/pg` | 职位 PostgreSQL CRUD |
 | | GET | `/api/v1/jobs/mongo` | MongoDB 职位数据查询 |
 
@@ -299,13 +335,63 @@ Worker 启动后自动：
 - 任务来源：上级分配 / 自己定制 / AI 生成
 
 ### 数据采集（内置爬虫引擎）
-- 通过 Worker 集群分发爬虫任务
-- 支持 Scrapy 框架
-- MongoDB 数据存储
-- 实时进度追踪（Redis + Socket.IO）
-- 任务取消与断点续传
 
-### 数据质量管理
+内置通用数据采集引擎，支持从多种数据源读取数据并写入目标存储：
+
+**支持的源类型：**
+
+| 类型 | 说明 | 配置参数 |
+|------|------|----------|
+| `database` | 关系型数据库 | `datasource_id`, `query`, `query_params` |
+| `api` | REST API | `url`, `method`, `headers`, `cookies`, `body`, `data_path`, 分页配置 |
+| `file_csv` | CSV 文件 | `file_path`, `delimiter`, `encoding` |
+| `file_excel` | Excel 文件 | `file_path`, `sheet_name` |
+| `file_json` | JSON 文件 | `file_path`, `root_path` |
+| `mongodb` | MongoDB | `datasource_id`, `collection`, `filter` |
+| `mihoyo_post` | 米游社帖子 | `cookies`, `game_id`, `forums`（爬虫插件示例） |
+
+**支持的目标存储：**
+
+| 类型 | 说明 | 配置参数 |
+|------|------|----------|
+| `database` | 外部关系型数据库 | `datasource_id`, `table`, `mode`(insert/upsert/truncate) |
+| `local_database` | **本项目自身数据库** | `table`, `mode`（无需额外配置） |
+| `file_csv` / `file_json` / `file_excel` | 文件输出 | `file_path`, `encoding`, `mode` |
+| `mongodb` | MongoDB | `datasource_id`, `collection` |
+
+**采集流程：** 读取 → 增量过滤 → 数据转换（字段映射/选择/过滤） → 分批写入 → 统计更新
+
+**爬虫插件系统：** 基于 Scrapling 引擎，提供 `BaseCrawler` 基类，内置频率限制、指数退避重试、UA 伪装。新增爬虫只需三步：
+1. 创建 `crawlers/<platform>/` 目录
+2. 继承 `BaseCrawler` 实现 `read()` 方法
+3. 在 `readers.py` 注册表中添加一行
+
+### 🤖 AI 智能助手
+
+基于大语言模型的 AI 对话助手，支持 **WebSocket 实时流式对话**：
+
+**AI 模型配置（REST API）：**
+- 支持 OpenAI / DeepSeek / Azure OpenAI 等兼容 API
+- 可在 UI 中动态添加和切换模型
+- 配置项：API 地址、Key、模型名、Token 限制、温度等
+
+**AI 可执行工具：**
+| 工具 | 功能 |
+|------|------|
+| `create_crawl_task` | 创建数据采集任务 |
+| `list_crawl_tasks` | 查询采集任务列表 |
+| `start_crawl_task` | 启动采集任务 |
+| `stop_crawl_task` | 停止采集任务 |
+
+**WebSocket 接口：**
+
+- 命名空间：`/ws/assistant`
+- 连接路径：`/ws/socket.io`（Socket.IO 协议）
+- 支持流式文本输出（打字机效果）
+- 支持上下文记忆（最近 50 条历史）
+- 实时工具调用与结果反馈
+
+### 远程服务器管理
 - 规则引擎：完整性检查、唯一性检查、范围检查、自定义规则
 - 告警触发：规则评估失败自动触发告警
 - 告警分发：邮件通知、Webhook 回调
