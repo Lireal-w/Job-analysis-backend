@@ -288,7 +288,7 @@ async def _update_task_stats(
 ) -> None:
     """更新任务统计信息"""
     try:
-        async with async_db_session() as session:
+        async with async_db_session.begin() as session:
             task = await crawl_task_dao.get(session, task_id)
             if not task:
                 logger.warning(f'[Crawl] 更新统计失败: 任务 {task_id} 不存在')
