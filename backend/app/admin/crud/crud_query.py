@@ -25,7 +25,14 @@ class CRUDQueryHistory(CRUDPlus[QueryHistory]):
         return result.scalars().all()
 
     async def create_history(self, db: AsyncSession, obj: dict) -> None:
-        await self.create_model(db, obj)
+        """创建查询历史记录
+
+        Note: obj 为 dict 类型，不能直接使用 create_model（它需要 Pydantic 模型），
+        因此直接构造 SQLAlchemy 模型实例后 add 到 session。
+        """
+        model = QueryHistory(**obj)
+        db.add(model)
+        await db.flush()
 
 
 class CRUDSavedQuery(CRUDPlus[SavedQuery]):
@@ -53,7 +60,7 @@ class CRUDSavedQuery(CRUDPlus[SavedQuery]):
         return await self.select_order('id', **filters)
 
     async def create(self, db: AsyncSession, obj: CreateSavedQueryParam) -> SavedQuery:
-        return await self.create_model(db, obj)
+        return await self.create_model(db, obj, flush=True)
 
     async def update(self, db: AsyncSession, pk: int, obj: UpdateSavedQueryParam) -> int:
         return await self.update_model(db, pk, obj)
