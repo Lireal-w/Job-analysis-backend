@@ -32,7 +32,7 @@ x-common-env: &common-env
 
 services:
   fba_server:
-    image: ghcr.io/${GITHUB_REPOSITORY:-fastapi-best-architecture/fastapi-best-architecture}-server:latest
+    image: ghcr.io/${GITHUB_REPOSITORY:-Lireal-w/Job-analysis-backend}-server:latest
     pull_policy: always
     ports:
       - "${DOCKER_MAP_SERVER_PORT:-8001}:8001"
@@ -40,6 +40,7 @@ services:
     restart: always
     environment:
       <<: *common-env
+      GITHUB_REPOSITORY: ${GITHUB_REPOSITORY:-Lireal-w/Job-analysis-backend}
     depends_on:
       fba_postgres:
         condition: service_started
@@ -101,12 +102,13 @@ services:
       - fba_network
 
   fba_celery_worker:
-    image: ghcr.io/${GITHUB_REPOSITORY:-fastapi-best-architecture/fastapi-best-architecture}-celery-worker:latest
+    image: ghcr.io/${GITHUB_REPOSITORY:-Lireal-w/Job-analysis-backend}-celery-worker:latest
     pull_policy: always
     container_name: fba_celery_worker
     restart: always
     environment:
       <<: *common-env
+      GITHUB_REPOSITORY: ${GITHUB_REPOSITORY:-Lireal-w/Job-analysis-backend}
     depends_on:
       fba_rabbitmq:
         condition: service_started
@@ -124,12 +126,13 @@ services:
         supervisorctl restart
 
   fba_celery_beat:
-    image: ghcr.io/${GITHUB_REPOSITORY:-fastapi-best-architecture/fastapi-best-architecture}-celery-beat:latest
+    image: ghcr.io/${GITHUB_REPOSITORY:-Lireal-w/Job-analysis-backend}-celery-beat:latest
     pull_policy: always
     container_name: fba_celery_beat
     restart: always
     environment:
       <<: *common-env
+      GITHUB_REPOSITORY: ${GITHUB_REPOSITORY:-Lireal-w/Job-analysis-backend}
     depends_on:
       fba_rabbitmq:
         condition: service_started
@@ -149,7 +152,7 @@ services:
         supervisorctl restart
 
   fba_celery_flower:
-    image: ghcr.io/${GITHUB_REPOSITORY:-fastapi-best-architecture/fastapi-best-architecture}-celery-flower:latest
+    image: ghcr.io/${GITHUB_REPOSITORY:-Lireal-w/Job-analysis-backend}-celery-flower:latest
     pull_policy: always
     ports:
       - "${DOCKER_MAP_CELERY_FLOWER_PORT:-8555}:8555"
@@ -157,6 +160,7 @@ services:
     restart: always
     environment:
       <<: *common-env
+      GITHUB_REPOSITORY: ${GITHUB_REPOSITORY:-Lireal-w/Job-analysis-backend}
     depends_on:
       fba_rabbitmq:
         condition: service_started

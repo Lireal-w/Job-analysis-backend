@@ -113,10 +113,13 @@ jobs:
             fi
 
             # ── 登录 GitHub Container Registry ──────────────
+            # ── 传递仓库信息到环境变量 ────────────────────
+            export GITHUB_REPOSITORY="${{ github.repository }}"
+
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # ── 拉取最新镜像并重启服务 ──────────────────────
-            docker compose -f docker-compose.prod.yml pull
+            GITHUB_REPOSITORY="${{ github.repository }}" docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # ── 清理旧镜像 ──────────────────────────────────
