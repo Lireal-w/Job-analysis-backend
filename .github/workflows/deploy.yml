@@ -78,6 +78,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Upload files to server via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT || '22' }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          rm: false
+          source: "docker-compose.prod.yml,deploy/"
+          target: ${{ secrets.DEPLOY_PATH || '/opt/fba' }}
+
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -86,34 +97,25 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_PASSWORD }}
           timeout: 60s
-          command_timeout: 120s
+          command_timeout: 300s
           script: |
             set -e
-
-            # ── 初始化项目目录 ──────────────────────────────
             DEPLOY_PATH="${{ secrets.DEPLOY_PATH || '/opt/fba' }}"
-            REPO_URL="${{ secrets.DEPLOY_REPO_URL || 'https://gitee.com/Lireal-W/fastapi-best-architecture.git' }}"
-
-            if [ ! -d "$DEPLOY_PATH" ]; then
-              mkdir -p "$DEPLOY_PATH"
-            fi
 
             cd "$DEPLOY_PATH"
 
-            # ── 拉取或更新项目代码 ──────────────────────────
-            git config --global --add safe.directory "$DEPLOY_PATH" 2>/dev/null || true
-            if [ -d ".git" ]; then
-              git pull
-            else
-              # 首次部署：克隆仓库到当前目录
-              git clone "$REPO_URL" .
-            fi
-
-            # ── 创建 .env 配置（如果不存在） ─────────────────
+            # ── 确保 .env 配置文件存在 ────────────────────
             if [ ! -f "deploy/backend/docker-compose/.env.server" ]; then
               mkdir -p deploy/backend/docker-compose
-              cp backend/.env.example deploy/backend/docker-compose/.env.server
-              echo "⚠️  请手动修改 deploy/backend/docker-compose/.env.server 中的配置"
+              echo "⚠️  首次部署：请先创建 deploy/backend/docker-compose/.env.server"
+              echo "   可以复制以下内容后修改："
+              echo "   cat > deploy/backend/docker-compose/.env.server << 'EOF'"
+              echo "   ENVIRONMENT='prod'"
+              echo "   DATABASE_TYPE='postgresql'"
+              echo "   DATABASE_HOST='127.0.0.1'"
+              echo "   # ... 完整配置请参考源码 docs"
+              echo "   EOF"
+              exit 1
             fi
 
             # ── 传递仓库信息到环境变量（必须小写） ────────────
