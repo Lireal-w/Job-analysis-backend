@@ -87,6 +87,9 @@ jobs:
           password: ${{ secrets.DEPLOY_PASSWORD }}
           script: |
             set -e
+            echo "=== 开始部署 ==="
+            echo "Server: ${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PORT || '22' }}"
+            echo "User: ${{ secrets.DEPLOY_USER }}"
 
             # ── 初始化项目目录 ──────────────────────────────
             DEPLOY_PATH="${{ secrets.DEPLOY_PATH || '/opt/fba' }}"
