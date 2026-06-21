@@ -36,3 +36,6 @@ from backend.app.admin.model.worker import WorkerNode as WorkerNode
 # AI 助手模型 (在 sys_ 前缀表中存储)
 from backend.app.assistant.model import AiConfig as AiConfig
 from backend.app.assistant.model import AiChatHistory as AiChatHistory
+
+# 移动端版本管理模型
+from backend.app.mobile.model import AppVersion as AppVersion

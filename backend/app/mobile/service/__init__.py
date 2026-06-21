@@ -1,0 +1,1 @@
+from backend.app.mobile.service.app_version_service import app_version_service as app_version_service
