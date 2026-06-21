@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Path, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 
 from backend.app.admin.schema.datasource import (
     CreateDatasourceParam,
@@ -12,6 +12,8 @@ from backend.app.admin.service.datasource_service import datasource_service
 from backend.common.pagination import DependsPagination, PageData
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
+from backend.common.security.permission import RequestPermission
+from backend.common.security.rbac import DependsRBAC
 from backend.database.db import CurrentSession, CurrentSessionTransaction
 
 router = APIRouter()
@@ -64,7 +66,10 @@ async def test_datasource_connection(obj: DatasourceTestParam) -> ResponseSchema
     return response_base.success(data=data)
 
 
-@router.post('', summary='创建数据源', dependencies=[DependsJwtAuth])
+@router.post('', summary='创建数据源', dependencies=[
+    Depends(RequestPermission('datasource:add')),
+    DependsRBAC,
+])
 async def create_datasource(
     db: CurrentSessionTransaction,
     request: Request,
@@ -77,7 +82,10 @@ async def create_datasource(
     return response_base.success()
 
 
-@router.put('/{pk}', summary='更新数据源', dependencies=[DependsJwtAuth])
+@router.put('/{pk}', summary='更新数据源', dependencies=[
+    Depends(RequestPermission('datasource:edit')),
+    DependsRBAC,
+])
 async def update_datasource(
     db: CurrentSessionTransaction,
     request: Request,
@@ -92,7 +100,10 @@ async def update_datasource(
     return response_base.fail()
 
 
-@router.put('/{pk}/status', summary='更新数据源状态', dependencies=[DependsJwtAuth])
+@router.put('/{pk}/status', summary='更新数据源状态', dependencies=[
+    Depends(RequestPermission('datasource:edit')),
+    DependsRBAC,
+])
 async def update_datasource_status(
     db: CurrentSessionTransaction,
     request: Request,
@@ -106,7 +117,10 @@ async def update_datasource_status(
     return response_base.fail()
 
 
-@router.delete('', summary='批量删除数据源', dependencies=[DependsJwtAuth])
+@router.delete('', summary='批量删除数据源', dependencies=[
+    Depends(RequestPermission('datasource:del')),
+    DependsRBAC,
+])
 async def delete_datasources(
     db: CurrentSessionTransaction,
     request: Request,

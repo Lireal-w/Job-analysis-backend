@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Path, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 
 from backend.app.admin.schema.data_storage import (
     CreateDataLayerParam,
@@ -14,6 +14,8 @@ from backend.app.admin.service.data_storage_service import data_layer_service, d
 from backend.common.pagination import DependsPagination, PageData
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
+from backend.common.security.permission import RequestPermission
+from backend.common.security.rbac import DependsRBAC
 from backend.database.db import CurrentSession, CurrentSessionTransaction
 
 router = APIRouter()
@@ -126,7 +128,10 @@ async def get_datasets_paginated(
     return response_base.success(data=page_data)
 
 
-@router.post('/datasets', summary='创建数据集', dependencies=[DependsJwtAuth])
+@router.post('/datasets', summary='创建数据集', dependencies=[
+    Depends(RequestPermission('dataset:add')),
+    DependsRBAC,
+])
 async def create_dataset(
     db: CurrentSessionTransaction,
     request: Request,
@@ -139,7 +144,10 @@ async def create_dataset(
     return response_base.success()
 
 
-@router.put('/datasets/{pk}', summary='更新数据集', dependencies=[DependsJwtAuth])
+@router.put('/datasets/{pk}', summary='更新数据集', dependencies=[
+    Depends(RequestPermission('dataset:edit')),
+    DependsRBAC,
+])
 async def update_dataset(
     db: CurrentSessionTransaction,
     request: Request,
@@ -154,7 +162,10 @@ async def update_dataset(
     return response_base.fail()
 
 
-@router.delete('/datasets', summary='批量删除数据集', dependencies=[DependsJwtAuth])
+@router.delete('/datasets', summary='批量删除数据集', dependencies=[
+    Depends(RequestPermission('dataset:del')),
+    DependsRBAC,
+])
 async def delete_datasets(
     db: CurrentSessionTransaction,
     request: Request,
