@@ -51,25 +51,25 @@ class DatasourceService:
     """数据源服务类"""
 
     @staticmethod
-    async def get(*, db: AsyncSession, pk: int) -> Datasource:
-        datasource = await datasource_dao.get(db, pk)
+    async def get(*, db: AsyncSession, pk: int, dept_id: int | None = None) -> Datasource:
+        datasource = await datasource_dao.get(db, pk, dept_id=dept_id)
         if not datasource:
             raise errors.NotFoundError(msg='数据源不存在')
         _decrypt_datasource_password(datasource)
         return datasource
 
     @staticmethod
-    async def get_all(*, db: AsyncSession) -> Sequence[Datasource]:
-        datasources = await datasource_dao.get_all(db)
+    async def get_all(*, db: AsyncSession, dept_id: int | None = None) -> Sequence[Datasource]:
+        datasources = await datasource_dao.get_all(db, dept_id=dept_id)
         for ds in datasources:
             _decrypt_datasource_password(ds)
         return datasources
 
     @staticmethod
     async def get_list(
-        *, db: AsyncSession, name: str | None = None, db_type: str | None = None
+        *, db: AsyncSession, name: str | None = None, db_type: str | None = None, dept_id: int | None = None
     ) -> dict[str, Any]:
-        select = await datasource_dao.get_select(name=name, db_type=db_type)
+        select = await datasource_dao.get_select(name=name, db_type=db_type, dept_id=dept_id)
         page_data = await paging_data(db, select)
         # 解密返回数据中的密码
         items = page_data.get('items', [])

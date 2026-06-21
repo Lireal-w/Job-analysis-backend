@@ -46,6 +46,7 @@ class DatasetSchemaBase(SchemaBase):
     schema_config: dict | None = Field(default=None, description='Schema 配置(JSON)')
     source_type: str | None = Field(default=None, max_length=32, description='数据来源类型(datasource/flow/manual)')
     source_id: int | None = Field(default=None, description='数据来源 ID')
+    dept_id: int | None = Field(default=None, description='所属部门 ID')
     lifecycle_days: int | None = Field(default=None, description='生命周期(天)')
 
 
@@ -62,6 +63,7 @@ class UpdateDatasetParam(SchemaBase):
     schema_config: dict | None = Field(default=None, description='Schema 配置(JSON)')
     source_type: str | None = Field(default=None, max_length=32, description='数据来源类型(datasource/flow/manual)')
     source_id: int | None = Field(default=None, description='数据来源 ID')
+    dept_id: int | None = Field(default=None, description='所属部门 ID')
     record_count: int | None = Field(default=None, description='记录数')
     storage_size: int | None = Field(default=None, description='存储大小(字节)')
     lifecycle_days: int | None = Field(default=None, description='生命周期(天)')

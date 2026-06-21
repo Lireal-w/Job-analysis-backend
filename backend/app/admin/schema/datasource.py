@@ -18,6 +18,7 @@ class DatasourceSchemaBase(SchemaBase):
     password: str | None = Field(default=None, max_length=512, description='密码')
     extra_params: str | None = Field(default=None, description='额外连接参数(JSON格式)')
     description: str | None = Field(default=None, max_length=256, description='描述')
+    dept_id: int | None = Field(default=None, description='所属部门 ID')
 
 
 class CreateDatasourceParam(DatasourceSchemaBase):
@@ -35,6 +36,7 @@ class UpdateDatasourceParam(SchemaBase):
     password: str | None = Field(default=None, max_length=512, description='密码')
     extra_params: str | None = Field(default=None, description='额外连接参数(JSON格式)')
     description: str | None = Field(default=None, max_length=256, description='描述')
+    dept_id: int | None = Field(default=None, description='所属部门 ID')
 
 
 class GetDatasourceDetail(DatasourceSchemaBase):

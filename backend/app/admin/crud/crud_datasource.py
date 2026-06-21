@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from sqlalchemy import Select
+from sqlalchemy import Select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
@@ -11,23 +11,31 @@ from backend.app.admin.schema.datasource import CreateDatasourceParam, UpdateDat
 class CRUDDatasource(CRUDPlus[Datasource]):
     """数据源数据库操作类"""
 
-    async def get(self, db: AsyncSession, pk: int) -> Datasource | None:
-        return await self.select_model(db, pk)
+    async def get(self, db: AsyncSession, pk: int, dept_id: int | None = None) -> Datasource | None:
+        filters = {'id': pk}
+        if dept_id is not None:
+            filters['dept_id'] = dept_id
+        return await self.select_model_by_column(db, **filters)
 
     async def get_by_name(self, db: AsyncSession, name: str) -> Datasource | None:
         return await self.select_model_by_column(db, name=name)
 
-    async def get_all(self, db: AsyncSession) -> Sequence[Datasource]:
-        return await self.select_models(db)
+    async def get_all(self, db: AsyncSession, dept_id: int | None = None) -> Sequence[Datasource]:
+        filters = {}
+        if dept_id is not None:
+            filters['dept_id'] = dept_id
+        return await self.select_models(db, **filters)
 
     async def get_select(
-        self, name: str | None = None, db_type: str | None = None
+        self, name: str | None = None, db_type: str | None = None, dept_id: int | None = None
     ) -> Select:
         filters = {}
         if name is not None:
             filters['name__like'] = f'%{name}%'
         if db_type is not None:
             filters['db_type'] = db_type
+        if dept_id is not None:
+            filters['dept_id'] = dept_id
         return await self.select_order('id', **filters)
 
     async def create(self, db: AsyncSession, obj: CreateDatasourceParam) -> None:

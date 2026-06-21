@@ -32,6 +32,7 @@ class Dataset(MappedBase):
     schema_config = sa.Column(sa.JSON, default=None, comment='Schema 配置(JSON)')
     source_type = sa.Column(sa.String(32), default=None, comment='数据来源类型(datasource/flow/manual)')
     source_id = sa.Column(sa.BigInteger, default=None, comment='数据来源 ID')
+    dept_id = sa.Column(sa.BigInteger, default=None, comment='所属部门 ID')
     record_count = sa.Column(sa.BigInteger, default=0, comment='记录数')
     storage_size = sa.Column(sa.BigInteger, default=0, comment='存储大小(字节)')
     lifecycle_days = sa.Column(sa.Integer, default=None, comment='生命周期(天)')

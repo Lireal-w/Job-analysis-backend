@@ -50,21 +50,21 @@ class DatasetService:
     """数据集服务类"""
 
     @staticmethod
-    async def get(*, db: AsyncSession, pk: int) -> Dataset:
-        dataset = await dataset_dao.get(db, pk)
+    async def get(*, db: AsyncSession, pk: int, dept_id: int | None = None) -> Dataset:
+        dataset = await dataset_dao.get(db, pk, dept_id=dept_id)
         if not dataset:
             raise errors.NotFoundError(msg='数据集不存在')
         return dataset
 
     @staticmethod
-    async def get_all(*, db: AsyncSession) -> Sequence[Dataset]:
-        return await dataset_dao.get_all(db)
+    async def get_all(*, db: AsyncSession, dept_id: int | None = None) -> Sequence[Dataset]:
+        return await dataset_dao.get_all(db, dept_id=dept_id)
 
     @staticmethod
     async def get_list(
-        *, db: AsyncSession, name: str | None = None, layer_id: int | None = None, status: int | None = None
+        *, db: AsyncSession, name: str | None = None, layer_id: int | None = None, status: int | None = None, dept_id: int | None = None
     ) -> dict[str, Any]:
-        select = await dataset_dao.get_select(name=name, layer_id=layer_id, status=status)
+        select = await dataset_dao.get_select(name=name, layer_id=layer_id, status=status, dept_id=dept_id)
         page_data = await paging_data(db, select)
         return page_data
 
@@ -76,8 +76,8 @@ class DatasetService:
         await dataset_dao.create(db, obj)
 
     @staticmethod
-    async def update(*, db: AsyncSession, pk: int, obj: UpdateDatasetParam) -> int:
-        dataset = await dataset_dao.get(db, pk)
+    async def update(*, db: AsyncSession, pk: int, obj: UpdateDatasetParam, dept_id: int | None = None) -> int:
+        dataset = await dataset_dao.get(db, pk, dept_id=dept_id)
         if not dataset:
             raise errors.NotFoundError(msg='数据集不存在')
         return await dataset_dao.update(db, pk, obj)

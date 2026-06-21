@@ -33,17 +33,23 @@ class CRUDDataLayer(CRUDPlus[DataLayer]):
 class CRUDDataset(CRUDPlus[Dataset]):
     """数据集数据库操作类"""
 
-    async def get(self, db: AsyncSession, pk: int) -> Dataset | None:
-        return await self.select_model(db, pk)
+    async def get(self, db: AsyncSession, pk: int, dept_id: int | None = None) -> Dataset | None:
+        filters = {'id': pk}
+        if dept_id is not None:
+            filters['dept_id'] = dept_id
+        return await self.select_model_by_column(db, **filters)
 
     async def get_by_name(self, db: AsyncSession, name: str) -> Dataset | None:
         return await self.select_model_by_column(db, name=name)
 
-    async def get_all(self, db: AsyncSession) -> Sequence[Dataset]:
-        return await self.select_models(db)
+    async def get_all(self, db: AsyncSession, dept_id: int | None = None) -> Sequence[Dataset]:
+        filters = {}
+        if dept_id is not None:
+            filters['dept_id'] = dept_id
+        return await self.select_models(db, **filters)
 
     async def get_select(
-        self, name: str | None = None, layer_id: int | None = None, status: int | None = None
+        self, name: str | None = None, layer_id: int | None = None, status: int | None = None, dept_id: int | None = None
     ) -> Select:
         filters = {}
         if name is not None:
@@ -52,6 +58,8 @@ class CRUDDataset(CRUDPlus[Dataset]):
             filters['layer_id'] = layer_id
         if status is not None:
             filters['status'] = status
+        if dept_id is not None:
+            filters['dept_id'] = dept_id
         return await self.select_order('id', **filters)
 
     async def create(self, db: AsyncSession, obj: CreateDatasetParam) -> None:
