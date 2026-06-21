@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ lower(github.repository_owner) }}/${{ lower(github.event.repository.name) }}
 
 jobs:
   build-and-push:
@@ -112,14 +112,14 @@ jobs:
               echo "⚠️  请手动修改 deploy/backend/docker-compose/.env.server 中的配置"
             fi
 
-            # ── 登录 GitHub Container Registry ──────────────
-            # ── 传递仓库信息到环境变量 ────────────────────
-            export GITHUB_REPOSITORY="${{ github.repository }}"
+            # ── 传递仓库信息到环境变量（必须小写） ────────────
+            GITHUB_REPOSITORY_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            export GITHUB_REPOSITORY_LOWER
 
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # ── 拉取最新镜像并重启服务 ──────────────────────
-            GITHUB_REPOSITORY="${{ github.repository }}" docker compose -f docker-compose.prod.yml pull
+            GITHUB_REPOSITORY_LOWER="$GITHUB_REPOSITORY_LOWER" docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # ── 清理旧镜像 ──────────────────────────────────
