@@ -78,55 +78,39 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.DEPLOY_SSH_HOST_KEY || 'StrictHostKeyChecking no' }}" > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+
       - name: Upload files to server via SCP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          port: ${{ secrets.DEPLOY_PORT || '22' }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          rm: false
-          source: "docker-compose.prod.yml,deploy/"
-          target: ${{ secrets.DEPLOY_PATH || '/opt/fba' }}
+        run: |
+          scp -P ${{ secrets.DEPLOY_PORT || '22' }} -o StrictHostKeyChecking=no \
+            -r docker-compose.prod.yml deploy/ \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH || '/opt/fba' }}
 
       - name: Deploy to server via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          port: ${{ secrets.DEPLOY_PORT || '22' }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          timeout: 30s
-          command_timeout: 300s
-          script: |
+        run: |
+          ssh -p ${{ secrets.DEPLOY_PORT || '22' }} -o StrictHostKeyChecking=no \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            DEPLOY_PATH='${{ secrets.DEPLOY_PATH || '/opt/fba' }}' \
+            GITHUB_ACTOR='${{ github.actor }}' \
+            GHCR_PAT='${{ secrets.GHCR_PAT }}' \
+            GITHUB_REPOSITORY_LOWER="$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" \
+            'bash -s' << 'SSHEOF'
             set -e
-            DEPLOY_PATH="${{ secrets.DEPLOY_PATH || '/opt/fba' }}"
-
+            echo "=== 部署开始 ==="
             cd "$DEPLOY_PATH"
-
-            # ── 确保 .env 配置文件存在 ────────────────────
             if [ ! -f "deploy/backend/docker-compose/.env.server" ]; then
-              mkdir -p deploy/backend/docker-compose
-              echo "⚠️  首次部署：请先创建 deploy/backend/docker-compose/.env.server"
-              echo "   可以复制以下内容后修改："
-              echo "   cat > deploy/backend/docker-compose/.env.server << 'EOF'"
-              echo "   ENVIRONMENT='prod'"
-              echo "   DATABASE_TYPE='postgresql'"
-              echo "   DATABASE_HOST='127.0.0.1'"
-              echo "   # ... 完整配置请参考源码 docs"
-              echo "   EOF"
+              echo "⚠️  请先创建 deploy/backend/docker-compose/.env.server 配置文件"
               exit 1
             fi
-
-            # ── 传递仓库信息到环境变量（必须小写） ────────────
-            GITHUB_REPOSITORY_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-            export GITHUB_REPOSITORY_LOWER
-
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            # ── 拉取最新镜像并重启服务 ──────────────────────
+            echo "$GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
             GITHUB_REPOSITORY_LOWER="$GITHUB_REPOSITORY_LOWER" docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
-
-            # ── 清理旧镜像 ──────────────────────────────────
             docker image prune -f
+            echo "=== 部署完成 ==="
+          SSHEOF
