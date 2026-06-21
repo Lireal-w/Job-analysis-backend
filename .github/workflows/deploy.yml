@@ -85,16 +85,38 @@ jobs:
           password: ${{ secrets.DEPLOY_PASSWORD }}
           script: |
             set -e
-            cd ${{ secrets.DEPLOY_PATH || '/opt/fba' }}
 
-            # Log in to GitHub Container Registry
+            # ── 初始化项目目录 ──────────────────────────────
+            DEPLOY_PATH="${{ secrets.DEPLOY_PATH || '/opt/fba' }}"
+            REPO_URL="${{ secrets.DEPLOY_REPO_URL || 'https://gitee.com/Lireal-W/fastapi-best-architecture.git' }}"
+
+            if [ ! -d "$DEPLOY_PATH" ]; then
+              mkdir -p "$DEPLOY_PATH"
+            fi
+
+            cd "$DEPLOY_PATH"
+
+            # ── 拉取或更新项目代码 ──────────────────────────
+            if [ -d ".git" ]; then
+              git pull
+            else
+              # 首次部署：克隆仓库到当前目录
+              git clone "$REPO_URL" .
+            fi
+
+            # ── 创建 .env 配置（如果不存在） ─────────────────
+            if [ ! -f "deploy/backend/docker-compose/.env.server" ]; then
+              mkdir -p deploy/backend/docker-compose
+              cp backend/.env.example deploy/backend/docker-compose/.env.server
+              echo "⚠️  请手动修改 deploy/backend/docker-compose/.env.server 中的配置"
+            fi
+
+            # ── 登录 GitHub Container Registry ──────────────
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Pull latest images
+            # ── 拉取最新镜像并重启服务 ──────────────────────
             docker compose -f docker-compose.prod.yml pull
-
-            # Restart services
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
-            # Clean up old images
+            # ── 清理旧镜像 ──────────────────────────────────
             docker image prune -f
