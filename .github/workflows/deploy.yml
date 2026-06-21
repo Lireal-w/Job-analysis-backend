@@ -97,6 +97,7 @@ jobs:
             cd "$DEPLOY_PATH"
 
             # ── 拉取或更新项目代码 ──────────────────────────
+            git config --global --add safe.directory "$DEPLOY_PATH" 2>/dev/null || true
             if [ -d ".git" ]; then
               git pull
             else
