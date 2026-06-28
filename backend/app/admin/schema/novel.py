@@ -36,7 +36,7 @@ class GetNovelListDetail(BaseModel):
     novel_cover: Optional[str] = Field(None, description='封面图片')
     total_chapters: int = Field(0, description='总章节数')
     source_url: str = Field(description='来源 URL')
-    crawl_time: Optional[datetime] = Field(None, description='爬取时间')
+    crawl_time: Optional[str] = Field(None, description='爬取时间')
 
 
 class GetNovelDetail(NovelBase):
@@ -44,7 +44,7 @@ class GetNovelDetail(NovelBase):
 
     total_chapters: int = Field(0, description='总章节数')
     chapters: list[NovelChapterBase] = Field(default_factory=list, description='章节列表(不含正文)')
-    crawl_time: Optional[datetime] = Field(None, description='爬取时间')
+    crawl_time: Optional[str] = Field(None, description='爬取时间')
 
 
 class GetChapterContent(BaseModel):

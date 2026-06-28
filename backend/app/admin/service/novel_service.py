@@ -61,15 +61,21 @@ class MongoNovelService:
 
         items = []
         async for doc in cursor:
+            ct = doc.get('crawl_time')
+            # crawl_time may be float (epoch) or string (ISO) - handle both
+            if isinstance(ct, (int, float)):
+                import datetime
+                ct = datetime.datetime.fromtimestamp(ct).isoformat()
+
             items.append(GetNovelListDetail(
                 novel_title=doc.get('novel_title', ''),
                 novel_author=doc.get('novel_author', ''),
                 novel_category=doc.get('novel_category', ''),
                 novel_status=doc.get('novel_status'),
                 novel_cover=doc.get('novel_cover'),
-                total_chapters=len(doc.get('chapters', [])),
+                total_chapters=doc.get('total_chapters', 0),
                 source_url=doc.get('source_url', ''),
-                crawl_time=doc.get('crawl_time'),
+                crawl_time=ct,
             ))
 
         return NovelPageData(items=items, total=total, page=page, size=size)
@@ -101,6 +107,11 @@ class MongoNovelService:
                 'content': None,  # 列表不返回正文
             })
 
+        ct = doc.get('crawl_time')
+        if isinstance(ct, (int, float)):
+            import datetime
+            ct = datetime.datetime.fromtimestamp(ct).isoformat()
+
         return GetNovelDetail(
             novel_title=doc.get('novel_title', ''),
             novel_author=doc.get('novel_author', ''),
@@ -111,7 +122,7 @@ class MongoNovelService:
             source_url=doc.get('source_url', ''),
             total_chapters=len(chapters),
             chapters=chapters,
-            crawl_time=doc.get('crawl_time'),
+            crawl_time=ct,
         )
 
     @staticmethod
