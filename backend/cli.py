@@ -653,7 +653,7 @@ class Run:
     host: Annotated[
         str,
         cappa.Arg(
-            default='127.0.0.1',
+            default='0.0.0.0',
             help='提供服务的主机 IP 地址，对于本地开发，请使用 `127.0.0.1`。'
             '要启用公共访问，例如在局域网中，请使用 `0.0.0.0`',
         ),
