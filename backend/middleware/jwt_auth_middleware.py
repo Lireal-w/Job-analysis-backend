@@ -1,3 +1,4 @@
+import hashlib
 from typing import Any
 
 from fastapi import Request, Response
@@ -38,7 +39,13 @@ class AuthenticationError(StarletteAuthenticationError):
 
 
 class JwtAuthMiddleware(AuthenticationBackend):
-    """JWT 认证中间件"""
+    """JWT / API Key 认证中间件
+
+    支持三种认证方式：
+    1. Authorization: Bearer <jwt_token> — JWT 认证
+    2. Authorization: Bearer fba_<key> — API Key 认证
+    3. X-API-Key: fba_<key> — API Key 认证
+    """
 
     @staticmethod
     def auth_exception_handler(conn: HTTPConnection, exc: AuthenticationError) -> Response:
@@ -54,15 +61,11 @@ class JwtAuthMiddleware(AuthenticationBackend):
     @staticmethod
     def extract_token(request: Request) -> str | None:
         """
-        从请求中提取 Bearer Token
+        从请求中提取 Token 或 API Key
 
         :param request: FastAPI 请求对象
         :return:
         """
-        authorization = request.headers.get('Authorization')
-        if not authorization:
-            return None
-
         path = request.url.path
         if path in settings.TOKEN_REQUEST_PATH_EXCLUDE:
             return None
@@ -70,11 +73,19 @@ class JwtAuthMiddleware(AuthenticationBackend):
             if pattern.match(path):
                 return None
 
-        scheme, token = get_authorization_scheme_param(authorization)
-        if scheme.lower() != 'bearer':
-            return None
+        # 1. 优先尝试 Authorization: Bearer
+        authorization = request.headers.get('Authorization')
+        if authorization:
+            scheme, token = get_authorization_scheme_param(authorization)
+            if scheme.lower() == 'bearer' and token:
+                return token
 
-        return token
+        # 2. 尝试 X-API-Key 头
+        api_key = request.headers.get('X-API-Key')
+        if api_key:
+            return api_key
+
+        return None
 
     async def authenticate(self, request: Request) -> tuple[AuthCredentials, GetUserInfoWithRelationDetail] | None:
         """
@@ -88,7 +99,14 @@ class JwtAuthMiddleware(AuthenticationBackend):
             return None
 
         try:
-            user = await jwt_authentication(token)
+            # 判断是否为 API Key（以 fba_ 开头）
+            if token.startswith('fba_'):
+                from backend.common.security.api_key import api_key_authentication
+
+                user = await api_key_authentication(token)
+            else:
+                # 标准 JWT 认证
+                user = await jwt_authentication(token)
         except TokenError as exc:
             raise AuthenticationError(code=exc.code, msg=exc.detail, headers=exc.headers)
         except Exception as e:
