@@ -221,6 +221,9 @@ def register_socket_app(app: FastAPI) -> None:
     # 导入 AI 助手 WebSocket 处理器，注册 /ws/assistant 命名空间
     import backend.app.assistant.socketio  # noqa: F401
 
+    # 导入聊天 WebSocket 处理器，注册 /ws/chat 命名空间
+    import backend.app.chat.socketio  # noqa: F401
+
     from backend.common.socketio.server import sio
 
     socket_app = socketio.ASGIApp(
