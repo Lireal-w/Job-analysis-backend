@@ -147,7 +147,7 @@ async def update_task(
 
 
 @router.delete('', summary='删除开发任务', dependencies=[DependsJwtAuth])
-async def delete_tasks(
+async def delete_agent_dev_tasks(
     db: CurrentSessionTransaction,
     pks: Annotated[str, Query(description='任务 ID 列表(逗号分隔)')],
 ) -> ResponseModel:

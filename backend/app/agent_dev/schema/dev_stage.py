@@ -1,5 +1,7 @@
 """Agent 开发任务阶段 Schema"""
 
+from __future__ import annotations
+
 from datetime import datetime
 
 from pydantic import ConfigDict, Field
