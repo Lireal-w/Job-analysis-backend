@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from backend.app.admin.api.v1.novel import novel_router
 from backend.app.admin.api.v1.auth import router as auth_router
 from backend.app.admin.api.v1.jobs import router as jobs_router
 from backend.app.admin.api.v1.log import router as log_router
@@ -14,3 +15,4 @@ v1.include_router(sys_router)
 v1.include_router(log_router)
 v1.include_router(monitor_router)
 v1.include_router(jobs_router)
+v1.include_router(novel_router)

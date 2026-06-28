@@ -42,3 +42,8 @@ from backend.app.assistant.model import AiChatHistory as AiChatHistory
 
 # 移动端版本管理模型
 from backend.app.mobile.model import AppVersion as AppVersion
+
+# Agent 开发编排模型
+from backend.app.agent_dev.model import AgentDevTask as AgentDevTask
+from backend.app.agent_dev.model import AgentDevStage as AgentDevStage
+from backend.app.agent_dev.model import AgentDevAgent as AgentDevAgent

@@ -523,6 +523,7 @@ class MongoDBSourceReader(BaseSourceReader):
 def _get_source_readers() -> dict[str, type[BaseSourceReader]]:
     """获取读取器注册表（惰性加载，避免循环导入）"""
     from backend.app.admin.service.crawl.crawlers.mihoyo import MiHoYoPostCrawler
+    from backend.app.admin.service.crawl.crawlers.novel import TianyaNovelCrawler
 
     return {
         'database': DatabaseSourceReader,
@@ -533,9 +534,7 @@ def _get_source_readers() -> dict[str, type[BaseSourceReader]]:
         'mongodb': MongoDBSourceReader,
         # ── 爬虫插件 ──
         'mihoyo_post': MiHoYoPostCrawler,
-        # 后续扩展：
-        # 'bilibili_video': BiliBiliVideoCrawler,
-        # 'weibo_timeline': WeiboTimelineCrawler,
+        'novel_spider': TianyaNovelCrawler,
     }
 
 

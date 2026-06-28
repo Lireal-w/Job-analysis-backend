@@ -13,6 +13,9 @@ from backend.core import path_conf
 from backend.core.path_conf import BASE_PATH
 from backend.database.db import get_database_url
 
+# 导入所有模型以确保 Alembic 可检测到
+import backend.app.admin.model  # noqa: F401
+
 if not os.path.exists(path_conf.ALEMBIC_VERSION_DIR):
     os.makedirs(path_conf.ALEMBIC_VERSION_DIR)
 
