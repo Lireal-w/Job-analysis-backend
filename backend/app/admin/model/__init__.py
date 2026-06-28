@@ -33,6 +33,9 @@ from backend.app.admin.model.data_permission import DataMaskingRule as DataMaski
 from backend.app.admin.model.data_permission import ResourcePermission as ResourcePermission
 from backend.app.admin.model.worker import WorkerNode as WorkerNode
 
+# API 密钥认证模型
+from backend.app.admin.model.api_key import ApiKey as ApiKey
+
 # AI 助手模型 (在 sys_ 前缀表中存储)
 from backend.app.assistant.model import AiConfig as AiConfig
 from backend.app.assistant.model import AiChatHistory as AiChatHistory

@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from backend.app.admin.api.v1.sys.api_key import router as api_key_router
 from backend.app.admin.api.v1.sys.data_permission import router as data_permission_router
 from backend.app.admin.api.v1.sys.crawl_task import router as crawl_task_router
 from backend.app.admin.api.v1.sys.data_flow import router as data_flow_router
@@ -39,3 +40,4 @@ router.include_router(datasource_router, prefix='/datasources', tags=['系统数
 router.include_router(server_router, prefix='/servers', tags=['系统服务器管理'])
 router.include_router(worker_router, prefix='/workers', tags=['系统 Worker 管理'])
 router.include_router(plugin_router, prefix='/plugins', tags=['系统插件'])
+router.include_router(api_key_router, prefix='/api-keys', tags=['系统 API 密钥认证'])
