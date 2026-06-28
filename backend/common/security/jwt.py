@@ -23,7 +23,32 @@ from backend.database.redis import redis_client
 from backend.utils.timezone import timezone
 
 # JWT dependency injection
-DependsJwtAuth = Depends(HTTPBearer())
+# 同时支持 Authorization: Bearer 和 X-API-Key 两种方式
+async def get_bearer_token(request: Request) -> str:
+    """
+    从请求头中提取 Bearer Token 或 API Key
+
+    支持三种方式：
+    1. Authorization: Bearer <token>
+    2. X-API-Key: <api_key>
+    3. Authorization: Bearer fba_<api_key>
+    """
+    # 1. 优先尝试 Authorization: Bearer
+    authorization = request.headers.get('Authorization')
+    if authorization:
+        scheme, token = get_authorization_scheme_param(authorization)
+        if scheme.lower() == 'bearer' and token:
+            return token
+
+    # 2. 尝试 X-API-Key 头
+    api_key = request.headers.get('X-API-Key')
+    if api_key:
+        return api_key
+
+    raise errors.TokenError(msg='Not authenticated')
+
+
+DependsJwtAuth = Depends(get_bearer_token)
 
 
 def jwt_encode(payload: dict[str, Any]) -> str:
